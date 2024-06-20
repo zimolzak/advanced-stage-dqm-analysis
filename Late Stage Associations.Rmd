@@ -1,0 +1,87 @@
+---
+title: "Late Stage Associations"
+author: "Andrew Zimolzak"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(readr)
+library(ggplot2)
+```
+
+```{r read}
+L <- read_csv("VA Lung comprehensive.csv")
+C <- read_csv("VA Colon comprehensive.csv")
+
+```
+
+Useful columns:
+- PatientSex
+- PatientRace
+- PatientAgeCapped
+- IsLate
+
+# Colon
+
+```{r}
+C_coded <- C %>% mutate(
+  Sex = case_when(
+    PatientSex == 1 ~ "M",
+    TRUE ~ "F"
+  )
+)
+
+
+colon_sex <- table(C_coded$Sex, C_coded$IsLate)
+colon_sex
+w_e <- colon_sex[1]
+m_e <- colon_sex[2]
+w_l <- colon_sex[3]
+m_l <- colon_sex[4]
+```
+Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` late stage colon.
+
+Women have `r w_l` / `r w_l + w_e` = `r w_l / (w_l + w_e) * 100` late stage colon.
+
+```{r}
+fisher.test(colon_sex)
+```
+
+```{r race}
+C_coded_r <- C_coded %>%
+  mutate(
+    Race = case_when(
+      PatientRace == 3 ~ "White",
+      PatientRace == 1 ~ "Black",
+      PatientRace == 2 ~ "Hispanic",
+      TRUE ~ "Other"
+    )
+  )
+
+colon_race <- table(C_coded_r$Race, C_coded_r$IsLate)
+colon_race
+```
+```{r race-analy-with-summ}
+C_coded_r %>%
+  group_by(Race) %>%
+  summarise(late_stage_rate = mean(IsLate) * 100)
+```
+
+```{r race-fisher}
+fisher.test(colon_race)
+```
+**Higher in white and other than in Black or Hispanic**
+
+```{r plot-age}
+ggplot(data = C, aes(PatientAgeCapped, fill = as.factor(IsLate))) +
+  geom_density()
+```
+```{r wilcox-age}
+wilcox.test(
+  C %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
+  C %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
+)
+```
+
