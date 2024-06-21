@@ -5,27 +5,49 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
+# Summary
+
+## Colon
+
+- Race is significant. 34.1% white versus 30.8% black.
+
+## Lung
+
+- Sex is predictive, 46.2% vs 42.7% in women.
+- Race is significant. 48.2% black vs 45.7% white
+- Age is significant. 70.5 years in late, 71.0 in early.
+
+
+
+
+# Intro
+
 ```{r setup, include=FALSE}
 library(dplyr)
 library(readr)
 library(ggplot2)
+library(knitr)
 ```
 
-```{r read}
+```{r read, include=FALSE}
 L <- read_csv("VA Lung comprehensive.csv")
 C <- read_csv("VA Colon comprehensive.csv")
-
 ```
 
-Useful columns:
+Columns I will analyze:
 - PatientSex
 - PatientRace
 - PatientAgeCapped
 - IsLate
 
+
+
+
 # Colon
 
-```{r code-sex}
+## Sex (n.s.)
+
+```{r code-sex, echo=FALSE}
 C_coded <- C %>% mutate(
   Sex = case_when(
     PatientSex == 1 ~ "M",
@@ -33,21 +55,22 @@ C_coded <- C %>% mutate(
   )
 )
 
-
 colon_sex <- table(C_coded$Sex, C_coded$IsLate)
-colon_sex
+colon_sex %>% kable()
 w_e <- colon_sex[1]
 m_e <- colon_sex[2]
 w_l <- colon_sex[3]
 m_l <- colon_sex[4]
 ```
-Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` late stage colon.
+Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` % late stage colon.
 
-Women have `r w_l` / `r w_l + w_e` = `r w_l / (w_l + w_e) * 100` late stage colon.
+Women have `r w_l` / `r w_l + w_e` = `r w_l / (w_l + w_e) * 100` % late stage colon.
 
-```{r fisher-test-sex}
+```{r fisher-test-sex, echo=FALSE}
 fisher.test(colon_sex)
 ```
+
+## Race (significant)
 
 ```{r code-race}
 C_coded_r <- C_coded %>%
@@ -61,20 +84,22 @@ C_coded_r <- C_coded %>%
   )
 
 colon_race <- table(C_coded_r$Race, C_coded_r$IsLate)
-colon_race
+colon_race %>% kable()
 ```
-```{r race-analy-with-summ}
+```{r race-analy-with-summ, echo=FALSE}
 C_coded_r %>%
   group_by(Race) %>%
-  summarise(late_stage_rate = mean(IsLate) * 100)
+  summarise(late_stage_rate = mean(IsLate) * 100) %>%
+  kable()
 ```
 
-```{r race-fisher}
+```{r race-fisher, echo=FALSE}
 fisher.test(colon_race)
 ```
 
+## Age (n.s.)
 
-```{r plot-age}
+```{r plot-age, echo=FALSE}
 ggplot(data = C, aes(
   PatientAgeCapped,
   fill = as.factor(IsLate),
@@ -82,7 +107,7 @@ ggplot(data = C, aes(
   )) +
   geom_density(alpha=0.3)
 ```
-```{r wilcox-age}
+```{r wilcox-age, echo=FALSE}
 wilcox.test(
   C %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
   C %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
@@ -96,7 +121,7 @@ wilcox.test(
 
 # Lung
 
-```{r cleaning-coding}
+```{r cleaning-coding, echo=FALSE}
 L_coded <- L %>%
   mutate(
     Sex = case_when(
@@ -112,10 +137,11 @@ L_coded <- L %>%
   )
 ```
 
+## Sex (significant)
 
-```{r sex}
+```{r sex, echo=FALSE}
 s_table <- table(L_coded$Sex, L_coded$IsLate)
-s_table
+s_table %>% kable()
 w_e <- s_table[1]  # note this overwrites prior vars
 m_e <- s_table[2]
 w_l <- s_table[3]
@@ -127,32 +153,34 @@ Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` late stage lung
 
 Women have `r w_l` / `r w_l + w_e` = `r w_l / (w_l + w_e) * 100` late stage lung
 
+## Race (significant)
 
-```{r race}
+```{r race, echo=FALSE}
 race <- table(L_coded$Race, L_coded$IsLate)
-race
+race %>% kable()
 
 L_coded %>%
   group_by(Race) %>%
-  summarise(late_stage_rate = mean(IsLate) * 100)
+  summarise(late_stage_rate = mean(IsLate) * 100) %>%
+  kable()
 
 fisher.test(race, workspace = 2000000/4)
 
 chisq.test(race)
-
 ```
 
-```{r age-plot}
+## Age (significant)
+
+```{r age-plot, echo=FALSE}
 ggplot(data = L, aes(
   PatientAgeCapped,
   fill = as.factor(IsLate),
   color = as.factor(IsLate))
   ) +
   geom_density(alpha=0.3)
-
 ```
 
-```{r age-wilcox}
+```{r age-wilcox, echo=FALSE}
 wilcox.test(
   L %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
   L %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
@@ -167,35 +195,20 @@ t.test(
 
 
 
+# Appendix: Detective work on race
 
-# Findings
+Colon and lung, respectively:
 
-## Colon
-
-- Race is significant. 34.1% white versus 30.8% black.
-
-## Lung
-
-- Sex is predictive, 46.2% vs 42.7% in women.
-- Race is significant. 48.2% black vs 45.7% white
-- Age is significant. 70.5 years in late, 71.0 in early.
-
-
-
-
-
-# Detective work on race
-
-```{r detective}
+```{r detective, echo=FALSE, message=FALSE, warning=FALSE}
 C_coded_r %>%
   group_by(Race, PatientRace) %>%
   summarise(count = n()) %>%
-  arrange(PatientRace)
+  arrange(PatientRace) %>%
+  kable()
 
 L_coded %>%
   group_by(Race, PatientRace) %>%
   summarise(count = n()) %>%
-  arrange(PatientRace)
-
+  arrange(PatientRace) %>%
+  kable()
 ```
-
