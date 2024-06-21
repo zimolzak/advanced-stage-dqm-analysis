@@ -75,8 +75,12 @@ fisher.test(colon_race)
 
 
 ```{r plot-age}
-ggplot(data = C, aes(PatientAgeCapped, fill = as.factor(IsLate))) +
-  geom_density()
+ggplot(data = C, aes(
+  PatientAgeCapped,
+  fill = as.factor(IsLate),
+  color = as.factor(IsLate)
+  )) +
+  geom_density(alpha=0.3)
 ```
 ```{r wilcox-age}
 wilcox.test(
@@ -85,9 +89,6 @@ wilcox.test(
 )
 ```
 
-## Findings
-
-**Higher in white and other than in Black or Hispanic** 34.1% versus 30.8%.
 
 
 
@@ -142,17 +143,45 @@ chisq.test(race)
 ```
 
 ```{r age-plot}
+ggplot(data = L, aes(
+  PatientAgeCapped,
+  fill = as.factor(IsLate),
+  color = as.factor(IsLate))
+  ) +
+  geom_density(alpha=0.3)
 
 ```
 
 ```{r age-wilcox}
+wilcox.test(
+  L %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
+  L %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
+)
 
+t.test(
+  L %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
+  L %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
+)
 ```
 
-## Findings (lung)
+
+
+
+
+# Findings
+
+## Colon
+
+- Race is significant. 34.1% white versus 30.8% black.
+
+## Lung
 
 - Sex is predictive, 46.2% vs 42.7% in women.
 - Race is significant. 48.2% black vs 45.7% white
+- Age is significant. 70.5 years in late, 71.0 in early.
+
+
+
 
 
 # Detective work on race
