@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
-# Summary
+# Summary (VA data)
 
 ## Colon
 
@@ -27,6 +27,7 @@ library(dplyr)
 library(readr)
 library(ggplot2)
 library(knitr)
+library(tidyr)
 ```
 
 ```{r read, include=FALSE}
@@ -73,7 +74,7 @@ fisher.test(colon_sex)
 ## Race (significant)
 
 ```{r code-race}
-C_coded_r <- C_coded %>%
+C_coded_r <- C_coded %>%  # Should use this one for all analyses
   mutate(
     Race = case_when(
       PatientRace == 3 ~ "White",
@@ -95,6 +96,10 @@ C_coded_r %>%
 
 ```{r race-fisher, echo=FALSE}
 fisher.test(colon_race)
+
+chi_col_race <- chisq.test(colon_race)
+chi_col_race
+p_col_race <- chi_col_race$p.value
 ```
 
 ## Age (n.s.)
@@ -166,7 +171,9 @@ L_coded %>%
 
 fisher.test(race, workspace = 2000000/4)
 
-chisq.test(race)
+chi_lung_race <- chisq.test(race)
+chi_lung_race
+p_lung_race <- chi_lung_race$p.value
 ```
 
 ## Age (significant)
@@ -212,3 +219,48 @@ L_coded %>%
   arrange(PatientRace) %>%
   kable()
 ```
+
+
+
+# Newest Analyses
+
+## Assoc table
+
+```{r big assoc}
+colon_final <- C_coded_r %>%
+  mutate(cancer_type = "Colon")
+
+lung_final <- L_coded %>%
+  mutate(cancer_type = "Lung")
+
+all_data <- bind_rows(colon_final, lung_final) %>%
+  select(Sex, Race, cancer_type, PatientAgeCapped, IsLate, StageOfCancer,
+         TypeOfCancer, TypeOfEmergencyEvent, EP) %>%
+  mutate(IsLate = case_when(
+    IsLate == 0 ~ "Early",
+    IsLate == 1 ~ "Advanced",
+    TRUE ~ "unknown"
+  ))
+
+assoc_table <- all_data %>%
+  group_by(cancer_type, IsLate, Race) %>%
+  summarise(count=n()) %>%
+  pivot_wider(names_from = c(cancer_type, IsLate), values_from = count) %>%
+  mutate(
+    Colon_Denom = Colon_Early + Colon_Advanced,
+    Lung_Denom = Lung_Early + Lung_Advanced,
+    Colon_Rate = round(Colon_Advanced / Colon_Denom * 100, 1),
+    Lung_Rate = round(Lung_Advanced / Lung_Denom * 100, 1),
+    Factor = "Race",
+    p_col_race = round(p_col_race, 4),
+    p_lung_race = round(p_lung_race, 4)
+  ) %>%
+  rename(Level = Race) %>%
+  select(
+    Factor, Level,
+    Colon_Advanced, Colon_Denom, Colon_Rate, p_col_race,
+    Lung_Advanced, Lung_Denom, Lung_Rate, p_lung_race
+  )
+
+```
+
