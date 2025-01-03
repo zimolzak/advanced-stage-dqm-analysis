@@ -28,6 +28,7 @@ library(readr)
 library(ggplot2)
 library(knitr)
 library(tidyr)
+library(Hmisc)
 ```
 
 ```{r read, include=FALSE}
@@ -36,6 +37,7 @@ C <- read_csv("VA Colon comprehensive.csv")
 ```
 
 Columns I will analyze:
+
 - PatientSex
 - PatientRace
 - PatientAgeCapped
@@ -262,5 +264,31 @@ assoc_table <- all_data %>%
     Lung_Advanced, Lung_Denom, Lung_Rate, p_lung_race
   )
 
+assoc_table %>% kable()
+
+```
+
+
+
+
+
+# For later
+
+Package `Hmisc` and function `binconf()` ?
+
+
+```{r ci-example, echo=TRUE}
+X <- data.frame(succ = c(52,76,64,68), denom=c(90,100,96,100))
+
+X %>% mutate(
+  ciw.poi = binconf(succ, denom)[,"PointEst"],
+  ciw.low = binconf(succ, denom)[,"Lower"],
+  ciw.upp = binconf(succ, denom)[,"Upper"],
+  
+  cia.poi = binconf(succ, denom, method = "asymptotic")[,"PointEst"],
+  cia.low = binconf(succ, denom, method = "asymptotic")[,"Lower"],
+  cia.upp = binconf(succ, denom, method = "asymptotic")[,"Upper"],
+) %>%
+  kable()
 ```
 
