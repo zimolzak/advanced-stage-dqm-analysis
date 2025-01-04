@@ -69,8 +69,12 @@ Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` % late stage colo
 
 Women have `r w_l` / `r w_l + w_e` = `r w_l / (w_l + w_e) * 100` % late stage colon.
 
-```{r fisher-test-sex, echo=FALSE}
+```{r test-sex, echo=FALSE}
 fisher.test(colon_sex)
+
+chi_col_s <- chisq.test(colon_sex)
+chi_col_s
+p_col_sex <- chi_col_s$p.value
 ```
 
 ## Race (significant)
@@ -155,6 +159,10 @@ w_l <- s_table[3]
 m_l <- s_table[4]
 
 fisher.test(s_table)
+
+chi_lung_sex <- chisq.test(s_table)
+chi_lung_sex
+p_lung_sex <- chi_lung_sex$p.value
 ```
 Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` late stage lung
 
@@ -180,7 +188,7 @@ p_lung_race <- chi_lung_race$p.value
 
 ## Age (significant)
 
-```{r age-plot, echo=FALSE}
+```{r age-plot-lung, echo=FALSE}
 ggplot(data = L, aes(
   PatientAgeCapped,
   fill = as.factor(IsLate),
@@ -228,7 +236,7 @@ L_coded %>%
 
 ## Assoc table
 
-```{r big assoc}
+```{r big-assoc}
 colon_final <- C_coded_r %>%
   mutate(cancer_type = "Colon")
 
@@ -269,6 +277,46 @@ assoc_table %>% kable()
 ```
 
 
+
+```{r comprehensive-assoc}
+assoc_r <- all_data %>%
+  count(cancer_type, IsLate, Race) %>%
+  mutate(Factor = "Race") %>% 
+  rename(Level = Race)
+
+assoc_s <- all_data %>%
+  count(cancer_type, IsLate, Sex) %>%
+  mutate(Factor = "Sex") %>% 
+  rename(Level = Sex)
+
+assoc <- bind_rows(assoc_r, assoc_s) %>% 
+  pivot_wider(names_from = c(cancer_type, IsLate), values_from = n) %>%
+  mutate(
+    Colon_Denom = Colon_Early + Colon_Advanced,
+    Lung_Denom = Lung_Early + Lung_Advanced,
+    Colon_Rate = round(Colon_Advanced / Colon_Denom * 100, 1),
+    Lung_Rate = round(Lung_Advanced / Lung_Denom * 100, 1),
+    p_colon = case_when(Factor == "Race" ~ round(p_col_race, 3), TRUE ~ round(p_col_sex, 3)),
+    p_lung = case_when(Factor == "Race" ~ round(p_lung_race, 3), TRUE ~ round(p_lung_sex, 3))
+  ) %>%
+  select(
+    Factor, Level,
+    Colon_Advanced, Colon_Denom, Colon_Rate, p_colon,
+    Lung_Advanced, Lung_Denom, Lung_Rate, p_lung
+  )
+
+
+```
+
+```{r displayable}
+assoc %>% 
+  arrange(Factor, desc(Lung_Denom)) %>% 
+  unite(Colon_Advanced, Colon_Denom, col="Colon_VA", sep = " / ") %>% 
+  unite(Colon_VA, Colon_Rate, col="Colon_VA", sep=" (") %>% 
+  unite(Lung_Advanced, Lung_Denom, col="Lung_VA", sep = " / ") %>% 
+  unite(Lung_VA, Lung_Rate, col="Lung_VA", sep=" (") %>% 
+  kable()
+```
 
 
 
