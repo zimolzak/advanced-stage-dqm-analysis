@@ -315,6 +315,7 @@ assoc %>%
   unite(Colon_VA, Colon_Rate, col="Colon_VA", sep=" (") %>% 
   unite(Lung_Advanced, Lung_Denom, col="Lung_VA", sep = " / ") %>% 
   unite(Lung_VA, Lung_Rate, col="Lung_VA", sep=" (") %>% 
+  mutate(across(c(Colon_VA, Lung_VA), ~ paste0(.x, ")"))) %>% 
   kable()
 ```
 
@@ -322,14 +323,19 @@ assoc %>%
 q123 <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
   median = ~quantile(.x, 0.5, na.rm = TRUE),
-  q3 = ~quantile(.x, 0.75, na.rm = TRUE)
+  q3 = ~quantile(.x, 0.75, na.rm = TRUE),
+  mean = ~round(mean(.x, na.rm=TRUE), 2),
+  sd = ~round(sd(.x, na.rm = TRUE), 2)
 )
 
 all_data %>% 
   group_by(cancer_type, IsLate) %>% 
   summarise(across(PatientAgeCapped, q123)) %>% 
   unite(PatientAgeCapped_median, PatientAgeCapped_q1, col="Median_Q1", sep = " (") %>% 
-  unite(Median_Q1, PatientAgeCapped_q3, col = "Median_Q1_Q3", sep = " - ")
+  unite(Median_Q1, PatientAgeCapped_q3, col = "Median_Q1_Q3", sep = " - ") %>% 
+  unite(PatientAgeCapped_mean, PatientAgeCapped_sd, col="Mean_SD", sep = " (") %>% 
+  mutate(across(c(Median_Q1_Q3, Mean_SD), ~ paste0(.x, ")"))) %>% 
+  kable()
 ```
 
 
