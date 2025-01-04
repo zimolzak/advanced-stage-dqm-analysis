@@ -318,6 +318,19 @@ assoc %>%
   kable()
 ```
 
+```{r fancy}
+q123 <- list(
+  q1 = ~quantile(.x, 0.25, na.rm = TRUE),
+  median = ~quantile(.x, 0.5, na.rm = TRUE),
+  q3 = ~quantile(.x, 0.75, na.rm = TRUE)
+)
+
+all_data %>% 
+  group_by(cancer_type, IsLate) %>% 
+  summarise(across(PatientAgeCapped, q123)) %>% 
+  unite(PatientAgeCapped_median, PatientAgeCapped_q1, col="Median_Q1", sep = " (") %>% 
+  unite(Median_Q1, PatientAgeCapped_q3, col = "Median_Q1_Q3", sep = " - ")
+```
 
 
 # For later
