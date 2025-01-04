@@ -1,22 +1,9 @@
 ---
 title: "Late Stage Associations"
-author: "Andrew Zimolzak"
+author: "Andrew Zimolzak, MD, MMSc"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
-
-# Summary (VA data)
-
-## Colon
-
-- Race is significant. 34.1% white versus 30.8% black.
-
-## Lung
-
-- Sex is predictive, 46.2% vs 42.7% in women.
-- Race is significant. 48.2% black vs 45.7% white
-- Age is significant. 70.5 years in late, 71.0 in early.
-
 
 
 
@@ -59,15 +46,7 @@ C_coded <- C %>% mutate(
 )
 
 colon_sex <- table(C_coded$Sex, C_coded$IsLate)
-colon_sex %>% kable()
-w_e <- colon_sex[1]
-m_e <- colon_sex[2]
-w_l <- colon_sex[3]
-m_l <- colon_sex[4]
 ```
-Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` % late stage colon.
-
-Women have `r w_l` / `r w_l + w_e` = `r w_l / (w_l + w_e) * 100` % late stage colon.
 
 ```{r test-sex, echo=FALSE}
 fisher.test(colon_sex)
@@ -79,7 +58,7 @@ p_col_sex <- chi_col_s$p.value
 
 ## Race (significant)
 
-```{r code-race}
+```{r code-race, echo=FALSE}
 C_coded_r <- C_coded %>%  # Should use this one for all analyses
   mutate(
     Race = case_when(
@@ -91,13 +70,6 @@ C_coded_r <- C_coded %>%  # Should use this one for all analyses
   )
 
 colon_race <- table(C_coded_r$Race, C_coded_r$IsLate)
-colon_race %>% kable()
-```
-```{r race-analy-with-summ, echo=FALSE}
-C_coded_r %>%
-  group_by(Race) %>%
-  summarise(late_stage_rate = mean(IsLate) * 100) %>%
-  kable()
 ```
 
 ```{r race-fisher, echo=FALSE}
@@ -119,13 +91,14 @@ ggplot(data = C, aes(
   geom_density(alpha=0.3)
 ```
 ```{r wilcox-age, echo=FALSE}
-wilcox.test(
+col_wilcox <- wilcox.test(
   C %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
   C %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
 )
+
+col_wilcox
+p_col_age <- col_wilcox$p.value
 ```
-
-
 
 
 
@@ -152,11 +125,6 @@ L_coded <- L %>%
 
 ```{r sex, echo=FALSE}
 s_table <- table(L_coded$Sex, L_coded$IsLate)
-s_table %>% kable()
-w_e <- s_table[1]  # note this overwrites prior vars
-m_e <- s_table[2]
-w_l <- s_table[3]
-m_l <- s_table[4]
 
 fisher.test(s_table)
 
@@ -164,20 +132,11 @@ chi_lung_sex <- chisq.test(s_table)
 chi_lung_sex
 p_lung_sex <- chi_lung_sex$p.value
 ```
-Men have `r m_l` / `r m_l + m_e` = `r m_l / (m_l + m_e) * 100` late stage lung
-
-Women have `r w_l` / `r w_l + w_e` = `r w_l / (w_l + w_e) * 100` late stage lung
 
 ## Race (significant)
 
 ```{r race, echo=FALSE}
 race <- table(L_coded$Race, L_coded$IsLate)
-race %>% kable()
-
-L_coded %>%
-  group_by(Race) %>%
-  summarise(late_stage_rate = mean(IsLate) * 100) %>%
-  kable()
 
 fisher.test(race, workspace = 2000000/4)
 
@@ -197,11 +156,14 @@ ggplot(data = L, aes(
   geom_density(alpha=0.3)
 ```
 
-```{r age-wilcox, echo=FALSE}
-wilcox.test(
+```{r age-wilcox-t, echo=FALSE}
+lung_wilcox <- wilcox.test(
   L %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
   L %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
 )
+
+lung_wilcox
+p_lung_age <- lung_wilcox$p.value
 
 t.test(
   L %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
@@ -232,11 +194,10 @@ L_coded %>%
 
 
 
-# Newest Analyses
 
-## Assoc table
+# Association tables
 
-```{r big-assoc}
+```{r final-tidying, echo=FALSE}
 colon_final <- C_coded_r %>%
   mutate(cancer_type = "Colon")
 
@@ -251,34 +212,9 @@ all_data <- bind_rows(colon_final, lung_final) %>%
     IsLate == 1 ~ "Advanced",
     TRUE ~ "unknown"
   ))
-
-assoc_table <- all_data %>%
-  group_by(cancer_type, IsLate, Race) %>%
-  summarise(count=n()) %>%
-  pivot_wider(names_from = c(cancer_type, IsLate), values_from = count) %>%
-  mutate(
-    Colon_Denom = Colon_Early + Colon_Advanced,
-    Lung_Denom = Lung_Early + Lung_Advanced,
-    Colon_Rate = round(Colon_Advanced / Colon_Denom * 100, 1),
-    Lung_Rate = round(Lung_Advanced / Lung_Denom * 100, 1),
-    Factor = "Race",
-    p_col_race = round(p_col_race, 4),
-    p_lung_race = round(p_lung_race, 4)
-  ) %>%
-  rename(Level = Race) %>%
-  select(
-    Factor, Level,
-    Colon_Advanced, Colon_Denom, Colon_Rate, p_col_race,
-    Lung_Advanced, Lung_Denom, Lung_Rate, p_lung_race
-  )
-
-assoc_table %>% kable()
-
 ```
 
-
-
-```{r comprehensive-assoc}
+```{r comprehensive-assoc, echo=FALSE}
 assoc_r <- all_data %>%
   count(cancer_type, IsLate, Race) %>%
   mutate(Factor = "Race") %>% 
@@ -304,11 +240,9 @@ assoc <- bind_rows(assoc_r, assoc_s) %>%
     Colon_Advanced, Colon_Denom, Colon_Rate, p_colon,
     Lung_Advanced, Lung_Denom, Lung_Rate, p_lung
   )
-
-
 ```
 
-```{r displayable}
+```{r displayable, echo=FALSE}
 assoc %>% 
   arrange(Factor, desc(Lung_Denom)) %>% 
   unite(Colon_Advanced, Colon_Denom, col="Colon_VA", sep = " / ") %>% 
@@ -319,7 +253,7 @@ assoc %>%
   kable()
 ```
 
-```{r fancy}
+```{r fancy, echo=FALSE}
 q123 <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
   median = ~quantile(.x, 0.5, na.rm = TRUE),
@@ -339,10 +273,11 @@ all_data %>%
 ```
 
 
+
+
 # For later
 
 Package `Hmisc` and function `binconf()` ?
-
 
 ```{r ci-example, echo=TRUE}
 X <- data.frame(succ = c(52,76,64,68), denom=c(90,100,96,100))
@@ -358,4 +293,3 @@ X %>% mutate(
 ) %>%
   kable()
 ```
-
