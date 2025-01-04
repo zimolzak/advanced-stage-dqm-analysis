@@ -249,7 +249,7 @@ assoc %>%
   unite(Colon_VA, Colon_Rate, col="Colon_VA", sep=" (") %>% 
   unite(Lung_Advanced, Lung_Denom, col="Lung_VA", sep = " / ") %>% 
   unite(Lung_VA, Lung_Rate, col="Lung_VA", sep=" (") %>% 
-  mutate(across(c(Colon_VA, Lung_VA), ~ paste0(.x, ")"))) %>% 
+  mutate(across(c(Colon_VA, Lung_VA), ~ paste0(.x, ")"))) %>%   # neat trick to add close paren
   kable()
 ```
 
@@ -269,8 +269,14 @@ all_data %>%
   unite(Median_Q1, PatientAgeCapped_q3, col = "Median_Q1_Q3", sep = " - ") %>% 
   unite(PatientAgeCapped_mean, PatientAgeCapped_sd, col="Mean_SD", sep = " (") %>% 
   mutate(across(c(Median_Q1_Q3, Mean_SD), ~ paste0(.x, ")"))) %>% 
+  mutate(P_value = case_when(
+    cancer_type == "Colon" ~ round(p_col_age, 3),
+    TRUE ~ p_lung_age
+  )) %>% 
   kable()
 ```
+
+FIXME - probably widen this out with col names like `Colon_VA`.
 
 
 
@@ -291,5 +297,15 @@ X %>% mutate(
   cia.low = binconf(succ, denom, method = "asymptotic")[,"Lower"],
   cia.upp = binconf(succ, denom, method = "asymptotic")[,"Upper"],
 ) %>%
+  mutate(across(starts_with("ci"), ~ round(.x * 100, 1) )) %>% 
+
+  unite(ciw.poi, ciw.low, col="Proportion_Wilson_CI", sep = " (") %>% 
+  unite(Proportion_Wilson_CI, ciw.upp, col = "Proportion_Wilson_CI", sep = " - ") %>% 
+  unite(cia.poi, cia.low, col="Proportion_Wald_CI", sep = " (") %>% 
+  unite(Proportion_Wald_CI, cia.upp, col = "Proportion_Wald_CI", sep = " - ") %>% 
+  mutate(across(
+    c(Proportion_Wilson_CI, Proportion_Wald_CI),
+    ~ paste0(.x, ")")
+  )) %>%   # neat trick to add close paren
   kable()
 ```
