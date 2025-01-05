@@ -85,6 +85,11 @@ ggplot(
 ) +
   geom_density(alpha=0.3) +
   xlim(20, 100)
+
+ggplot(data = colon, aes(Age)) +
+  geom_histogram() +
+  facet_grid(rows="Stage") +
+  xlim(20, 100)
 ```
 
 ```{r test-colon-age, include=FALSE}
@@ -132,6 +137,11 @@ ggplot(
   )
 ) +
   geom_density(alpha=0.3) +
+  xlim(20, 100)
+
+ggplot(data = lung, aes(Age)) +
+  geom_histogram() +
+  facet_grid(rows="Stage") +
   xlim(20, 100)
 ```
 
