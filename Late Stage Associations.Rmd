@@ -32,12 +32,7 @@ Columns I will analyze:
 
 
 
-
-# Colon
-
-## Sex (n.s.)
-
-```{r code-sex, echo=FALSE}
+```{r tidying, echo=FALSE}
 C_coded <- C %>% mutate(
   Sex = case_when(
     PatientSex == 1 ~ "M",
@@ -45,20 +40,6 @@ C_coded <- C %>% mutate(
   )
 )
 
-colon_sex <- table(C_coded$Sex, C_coded$IsLate)
-```
-
-```{r test-sex, echo=FALSE}
-fisher.test(colon_sex)
-
-chi_col_s <- chisq.test(colon_sex)
-chi_col_s
-p_col_sex <- chi_col_s$p.value
-```
-
-## Race (significant)
-
-```{r code-race, echo=FALSE}
 C_coded_r <- C_coded %>%  # Should use this one for all analyses
   mutate(
     Race = case_when(
@@ -69,10 +50,55 @@ C_coded_r <- C_coded %>%  # Should use this one for all analyses
     )
   )
 
-colon_race <- table(C_coded_r$Race, C_coded_r$IsLate)
+L_coded <- L %>%
+  mutate(
+    Sex = case_when(
+      PatientSex == 1 ~ "M",
+      TRUE ~ "F"
+    ),
+    Race = case_when(
+      PatientRace == 3 ~ "White",
+      PatientRace == 1 ~ "Black",
+      PatientRace == 2 ~ "Hispanic",
+      TRUE ~ "Other"
+    )
+  )
+
+colon_final <- C_coded_r %>%
+  mutate(cancer_type = "Colon")
+
+lung_final <- L_coded %>%
+  mutate(cancer_type = "Lung")
+
+all_data <- bind_rows(colon_final, lung_final) %>%
+  select(Sex, Race, cancer_type, PatientAgeCapped, IsLate, StageOfCancer,
+         TypeOfCancer, TypeOfEmergencyEvent, EP) %>%
+  mutate(IsLate = case_when(
+    IsLate == 0 ~ "Early",
+    IsLate == 1 ~ "Advanced",
+    TRUE ~ "unknown"
+  ))
 ```
 
-```{r race-fisher, echo=FALSE}
+# Colon
+
+## Sex (n.s.)
+
+```{r test-sex-c, echo=FALSE}
+colon_sex <- table(C_coded$Sex, C_coded$IsLate)
+
+fisher.test(colon_sex)
+
+chi_col_s <- chisq.test(colon_sex)
+chi_col_s
+p_col_sex <- chi_col_s$p.value
+```
+
+## Race (significant)
+
+```{r test-race-c, echo=FALSE}
+colon_race <- table(C_coded_r$Race, C_coded_r$IsLate)
+
 fisher.test(colon_race)
 
 chi_col_race <- chisq.test(colon_race)
@@ -82,7 +108,7 @@ p_col_race <- chi_col_race$p.value
 
 ## Age (n.s.)
 
-```{r plot-age, echo=FALSE}
+```{r plot-age-c, echo=FALSE}
 ggplot(data = C, aes(
   PatientAgeCapped,
   fill = as.factor(IsLate),
@@ -90,7 +116,7 @@ ggplot(data = C, aes(
   )) +
   geom_density(alpha=0.3)
 ```
-```{r wilcox-age, echo=FALSE}
+```{r test-age-c, echo=FALSE}
 col_wilcox <- wilcox.test(
   C %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
   C %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
@@ -105,25 +131,9 @@ p_col_age <- col_wilcox$p.value
 
 # Lung
 
-```{r cleaning-coding, echo=FALSE}
-L_coded <- L %>%
-  mutate(
-    Sex = case_when(
-      PatientSex == 1 ~ "M",
-      TRUE ~ "F"
-    ),
-    Race = case_when(
-      PatientRace == 3 ~ "White",
-      PatientRace == 1 ~ "Black",
-      PatientRace == 2 ~ "Hispanic",
-      TRUE ~ "Other"
-    )
-  )
-```
-
 ## Sex (significant)
 
-```{r sex, echo=FALSE}
+```{r test-sex-l, echo=FALSE}
 s_table <- table(L_coded$Sex, L_coded$IsLate)
 
 fisher.test(s_table)
@@ -135,7 +145,7 @@ p_lung_sex <- chi_lung_sex$p.value
 
 ## Race (significant)
 
-```{r race, echo=FALSE}
+```{r test-race-l, echo=FALSE}
 race <- table(L_coded$Race, L_coded$IsLate)
 
 fisher.test(race, workspace = 2000000/4)
@@ -147,7 +157,7 @@ p_lung_race <- chi_lung_race$p.value
 
 ## Age (significant)
 
-```{r age-plot-lung, echo=FALSE}
+```{r plot-age-lung, echo=FALSE}
 ggplot(data = L, aes(
   PatientAgeCapped,
   fill = as.factor(IsLate),
@@ -156,7 +166,7 @@ ggplot(data = L, aes(
   geom_density(alpha=0.3)
 ```
 
-```{r age-wilcox-t, echo=FALSE}
+```{r test-age-lung, echo=FALSE}
 lung_wilcox <- wilcox.test(
   L %>% filter(IsLate == 1) %>% pull(PatientAgeCapped),
   L %>% filter(IsLate == 0) %>% pull(PatientAgeCapped)
@@ -198,20 +208,8 @@ L_coded %>%
 # Association tables
 
 ```{r final-tidying, echo=FALSE}
-colon_final <- C_coded_r %>%
-  mutate(cancer_type = "Colon")
 
-lung_final <- L_coded %>%
-  mutate(cancer_type = "Lung")
 
-all_data <- bind_rows(colon_final, lung_final) %>%
-  select(Sex, Race, cancer_type, PatientAgeCapped, IsLate, StageOfCancer,
-         TypeOfCancer, TypeOfEmergencyEvent, EP) %>%
-  mutate(IsLate = case_when(
-    IsLate == 0 ~ "Early",
-    IsLate == 1 ~ "Advanced",
-    TRUE ~ "unknown"
-  ))
 ```
 
 ```{r comprehensive-assoc, echo=FALSE}
@@ -309,3 +307,19 @@ X %>% mutate(
   )) %>%   # neat trick to add close paren
   kable()
 ```
+
+
+
+
+# To Do
+
+- [ ] Descriptive stats (large scale)
+    - flow diagram
+    - missingness
+    - demographics (by health sys)
+- [ ] Manual review stats
+    - description of temporal distribution
+    - temporal vs demographic
+    - temporal vs MOD
+    - CIs for percent of MOD
+- [ ] Geis data
