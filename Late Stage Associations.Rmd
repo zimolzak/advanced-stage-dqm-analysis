@@ -16,6 +16,8 @@ library(ggplot2)
 library(knitr)
 library(tidyr)
 library(Hmisc)
+
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r read, include=FALSE}
@@ -28,7 +30,7 @@ colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
 # FIXME - IsLate is a factor.
 ```
 
-```{r tidying, echo=FALSE}
+```{r tidying}
 all_data <- bind_rows(colon_raw, lung_raw) %>%
   mutate(
     Sex = case_when(PatientSex == 1 ~ "M",TRUE ~ "F"),
@@ -56,7 +58,7 @@ lung <- all_data %>% filter(cancer_type == "Lung")
 
 ## Sex (n.s.)
 
-```{r test-colon-sex, echo=FALSE}
+```{r test-colon-sex}
 tab_colon_sex <- table(colon$Sex, colon$IsLate)
 
 fisher.test(tab_colon_sex)
@@ -68,7 +70,7 @@ p_colon_sex <- chi_colon_sex$p.value
 
 ## Race (significant)
 
-```{r test-colon-race, echo=FALSE}
+```{r test-colon-race}
 tab_colon_race <- table(colon$Race, colon$IsLate)
 
 fisher.test(tab_colon_race)
@@ -80,7 +82,7 @@ p_colon_race <- chi_colon_race$p.value
 
 ## Age (n.s.)
 
-```{r plot-colon-age, echo=FALSE}
+```{r plot-colon-age}
 ggplot(data = colon, aes(
   PatientAgeCapped,
   fill = as.factor(IsLate),
@@ -88,7 +90,7 @@ ggplot(data = colon, aes(
   )) +
   geom_density(alpha=0.3)
 ```
-```{r test-colon-age, echo=FALSE}
+```{r test-colon-age}
 wilc_colon_age <- wilcox.test(
   colon %>% filter(IsLate == "Advanced") %>% pull(PatientAgeCapped),
   colon %>% filter(IsLate == "Early") %>% pull(PatientAgeCapped)
@@ -105,7 +107,7 @@ p_colon_age <- wilc_colon_age$p.value
 
 ## Sex (significant)
 
-```{r test-lung-sex, echo=FALSE}
+```{r test-lung-sex}
 tab_lung_sex <- table(lung$Sex, lung$IsLate)
 
 fisher.test(tab_lung_sex)
@@ -117,7 +119,7 @@ p_lung_sex <- chi_lung_sex$p.value
 
 ## Race (significant)
 
-```{r test-lung-race, echo=FALSE}
+```{r test-lung-race}
 tab_lung_race <- table(lung$Race, lung$IsLate)
 
 fisher.test(tab_lung_race, workspace = 2000000/4)
@@ -129,7 +131,7 @@ p_lung_race <- chi_lung_race$p.value
 
 ## Age (significant)
 
-```{r plot-lung-age, echo=FALSE}
+```{r plot-lung-age}
 ggplot(
   data = lung,
   aes(
@@ -141,7 +143,7 @@ ggplot(
   geom_density(alpha=0.3)
 ```
 
-```{r test-lung-age, echo=FALSE}
+```{r test-lung-age}
 wilc_lung_age <- wilcox.test(
   lung %>% filter(IsLate == "Advanced") %>% pull(PatientAgeCapped),
   lung %>% filter(IsLate == "Early") %>% pull(PatientAgeCapped)
@@ -161,7 +163,7 @@ t.test(
 
 # Appendix: Detective work on race
 
-```{r detective, echo=FALSE, message=FALSE, warning=FALSE}
+```{r detective, message=FALSE, warning=FALSE}
 all_data %>%
   group_by(cancer_type, Race, PatientRace) %>%
   summarise(count = n()) %>%
@@ -174,7 +176,7 @@ all_data %>%
 
 # Association tables
 
-```{r comprehensive-assoc, echo=FALSE}
+```{r categorical-assoc}
 assoc_r <- all_data %>%
   count(cancer_type, IsLate, Race) %>%
   mutate(Factor = "Race") %>% 
@@ -202,7 +204,7 @@ assoc <- bind_rows(assoc_r, assoc_s) %>%
   )
 ```
 
-```{r displayable, echo=FALSE}
+```{r displayable}
 assoc %>% 
   arrange(Factor, desc(Lung_Denom)) %>% 
   unite(Colon_Advanced, Colon_Denom, col="Colon_VA", sep = " / ") %>% 
@@ -213,7 +215,7 @@ assoc %>%
   kable()
 ```
 
-```{r fancy, echo=FALSE}
+```{r age-assoc}
 q123 <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
   median = ~quantile(.x, 0.5, na.rm = TRUE),
