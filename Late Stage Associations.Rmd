@@ -5,10 +5,6 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
-
-
-# Intro
-
 ```{r setup, include=FALSE}
 library(dplyr)
 library(readr)
@@ -54,11 +50,12 @@ colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
 ```
 
+
+
+
 # Colon
 
-## Sex (n.s.)
-
-```{r test-colon-sex}
+```{r test-colon-sex, include=FALSE}
 tab_colon_sex <- table(colon$Sex, colon$IsLate)
 
 fisher.test(tab_colon_sex)
@@ -68,9 +65,7 @@ chi_colon_sex
 p_colon_sex <- chi_colon_sex$p.value
 ```
 
-## Race (significant)
-
-```{r test-colon-race}
+```{r test-colon-race, include=FALSE}
 tab_colon_race <- table(colon$Race, colon$IsLate)
 
 fisher.test(tab_colon_race)
@@ -80,17 +75,20 @@ chi_colon_race
 p_colon_race <- chi_colon_race$p.value
 ```
 
-## Age (n.s.)
-
 ```{r plot-colon-age}
-ggplot(data = colon, aes(
-  PatientAgeCapped,
-  fill = as.factor(IsLate),
-  color = as.factor(IsLate)
-  )) +
-  geom_density(alpha=0.3)
+ggplot(
+  data = colon,
+  aes(
+    PatientAgeCapped,
+    fill = as.factor(IsLate),
+    color = as.factor(IsLate)
+  )
+) +
+  geom_density(alpha=0.3) +
+  xlim(20, 100)
 ```
-```{r test-colon-age}
+
+```{r test-colon-age, include=FALSE}
 wilc_colon_age <- wilcox.test(
   colon %>% filter(IsLate == "Advanced") %>% pull(PatientAgeCapped),
   colon %>% filter(IsLate == "Early") %>% pull(PatientAgeCapped)
@@ -105,9 +103,7 @@ p_colon_age <- wilc_colon_age$p.value
 
 # Lung
 
-## Sex (significant)
-
-```{r test-lung-sex}
+```{r test-lung-sex, include=FALSE}
 tab_lung_sex <- table(lung$Sex, lung$IsLate)
 
 fisher.test(tab_lung_sex)
@@ -117,9 +113,7 @@ chi_lung_sex
 p_lung_sex <- chi_lung_sex$p.value
 ```
 
-## Race (significant)
-
-```{r test-lung-race}
+```{r test-lung-race, include=FALSE}
 tab_lung_race <- table(lung$Race, lung$IsLate)
 
 fisher.test(tab_lung_race, workspace = 2000000/4)
@@ -128,8 +122,6 @@ chi_lung_race <- chisq.test(tab_lung_race)
 chi_lung_race
 p_lung_race <- chi_lung_race$p.value
 ```
-
-## Age (significant)
 
 ```{r plot-lung-age}
 ggplot(
@@ -140,10 +132,11 @@ ggplot(
     color = as.factor(IsLate)
   )
 ) +
-  geom_density(alpha=0.3)
+  geom_density(alpha=0.3) +
+  xlim(20, 100)
 ```
 
-```{r test-lung-age}
+```{r test-lung-age, include=FALSE}
 wilc_lung_age <- wilcox.test(
   lung %>% filter(IsLate == "Advanced") %>% pull(PatientAgeCapped),
   lung %>% filter(IsLate == "Early") %>% pull(PatientAgeCapped)
@@ -161,7 +154,7 @@ t.test(
 
 
 
-# Appendix: Detective work on race
+# Aside: Detective work on race
 
 ```{r detective, message=FALSE, warning=FALSE}
 all_data %>%
