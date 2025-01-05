@@ -22,19 +22,17 @@ lung_raw <- read_csv("VA Lung comprehensive.csv") %>%
 
 colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
   mutate(cancer_type = "Colon")
-
-# FIXME - IsLate is a factor.
 ```
 
 ```{r tidying}
 all_data <- bind_rows(colon_raw, lung_raw) %>%
   mutate(
     Sex = case_when(PatientSex == 1 ~ "M",TRUE ~ "F"),
-    IsLate = case_when(
+    Stage = as.factor(case_when(
       IsLate == 0 ~ "Early",
       IsLate == 1 ~ "Advanced",
       TRUE ~ "unknown"
-    ),
+    )),
     Race = case_when(
       PatientRace == 3 ~ "White",
       PatientRace == 1 ~ "Black",
@@ -42,9 +40,10 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
       TRUE ~ "Other"
     )
   ) %>%
-  select(Sex, Race, cancer_type, PatientAgeCapped, IsLate, StageOfCancer, PatientRace,
-         TypeOfCancer, TypeOfEmergencyEvent, EP) %>%  # FIXME - delete this select() later?
-  mutate()
+  rename(
+    StageGroupNumeric = StageOfCancer,
+    Age = PatientAgeCapped
+  )
 
 colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
@@ -56,7 +55,7 @@ lung <- all_data %>% filter(cancer_type == "Lung")
 # Colon
 
 ```{r test-colon-sex, include=FALSE}
-tab_colon_sex <- table(colon$Sex, colon$IsLate)
+tab_colon_sex <- table(colon$Sex, colon$Stage)
 
 fisher.test(tab_colon_sex)
 
@@ -66,7 +65,7 @@ p_colon_sex <- chi_colon_sex$p.value
 ```
 
 ```{r test-colon-race, include=FALSE}
-tab_colon_race <- table(colon$Race, colon$IsLate)
+tab_colon_race <- table(colon$Race, colon$Stage)
 
 fisher.test(tab_colon_race)
 
@@ -79,9 +78,9 @@ p_colon_race <- chi_colon_race$p.value
 ggplot(
   data = colon,
   aes(
-    PatientAgeCapped,
-    fill = as.factor(IsLate),
-    color = as.factor(IsLate)
+    Age,
+    fill = Stage,
+    color = Stage
   )
 ) +
   geom_density(alpha=0.3) +
@@ -90,8 +89,8 @@ ggplot(
 
 ```{r test-colon-age, include=FALSE}
 wilc_colon_age <- wilcox.test(
-  colon %>% filter(IsLate == "Advanced") %>% pull(PatientAgeCapped),
-  colon %>% filter(IsLate == "Early") %>% pull(PatientAgeCapped)
+  colon %>% filter(Stage == "Advanced") %>% pull(Age),
+  colon %>% filter(Stage == "Early") %>% pull(Age)
 )
 
 wilc_colon_age
@@ -104,7 +103,7 @@ p_colon_age <- wilc_colon_age$p.value
 # Lung
 
 ```{r test-lung-sex, include=FALSE}
-tab_lung_sex <- table(lung$Sex, lung$IsLate)
+tab_lung_sex <- table(lung$Sex, lung$Stage)
 
 fisher.test(tab_lung_sex)
 
@@ -114,7 +113,7 @@ p_lung_sex <- chi_lung_sex$p.value
 ```
 
 ```{r test-lung-race, include=FALSE}
-tab_lung_race <- table(lung$Race, lung$IsLate)
+tab_lung_race <- table(lung$Race, lung$Stage)
 
 fisher.test(tab_lung_race, workspace = 2000000/4)
 
@@ -127,9 +126,9 @@ p_lung_race <- chi_lung_race$p.value
 ggplot(
   data = lung,
   aes(
-    PatientAgeCapped,
-    fill = as.factor(IsLate),
-    color = as.factor(IsLate)
+    Age,
+    fill = Stage,
+    color = Stage
   )
 ) +
   geom_density(alpha=0.3) +
@@ -138,16 +137,16 @@ ggplot(
 
 ```{r test-lung-age, include=FALSE}
 wilc_lung_age <- wilcox.test(
-  lung %>% filter(IsLate == "Advanced") %>% pull(PatientAgeCapped),
-  lung %>% filter(IsLate == "Early") %>% pull(PatientAgeCapped)
+  lung %>% filter(Stage == "Advanced") %>% pull(Age),
+  lung %>% filter(Stage == "Early") %>% pull(Age)
 )
 
 wilc_lung_age
 p_lung_age <- wilc_lung_age$p.value
 
 t.test(
-  lung %>% filter(IsLate == "Advanced") %>% pull(PatientAgeCapped),
-  lung %>% filter(IsLate == "Early") %>% pull(PatientAgeCapped)
+  lung %>% filter(Stage == "Advanced") %>% pull(Age),
+  lung %>% filter(Stage == "Early") %>% pull(Age)
 )
 ```
 
@@ -171,17 +170,17 @@ all_data %>%
 
 ```{r categorical-assoc}
 assoc_r <- all_data %>%
-  count(cancer_type, IsLate, Race) %>%
+  count(cancer_type, Stage, Race) %>%
   mutate(Factor = "Race") %>% 
   rename(Level = Race)
 
 assoc_s <- all_data %>%
-  count(cancer_type, IsLate, Sex) %>%
+  count(cancer_type, Stage, Sex) %>%
   mutate(Factor = "Sex") %>% 
   rename(Level = Sex)
 
 assoc <- bind_rows(assoc_r, assoc_s) %>% 
-  pivot_wider(names_from = c(cancer_type, IsLate), values_from = n) %>%
+  pivot_wider(names_from = c(cancer_type, Stage), values_from = n) %>%
   mutate(
     Colon_Denom = Colon_Early + Colon_Advanced,
     Lung_Denom = Lung_Early + Lung_Advanced,
@@ -218,11 +217,11 @@ q123 <- list(
 )
 
 all_data %>% 
-  group_by(cancer_type, IsLate) %>% 
-  summarise(across(PatientAgeCapped, q123)) %>% 
-  unite(PatientAgeCapped_median, PatientAgeCapped_q1, col="Median_Q1", sep = " (") %>% 
-  unite(Median_Q1, PatientAgeCapped_q3, col = "Median_Q1_Q3", sep = " - ") %>% 
-  unite(PatientAgeCapped_mean, PatientAgeCapped_sd, col="Mean_SD", sep = " (") %>% 
+  group_by(cancer_type, Stage) %>% 
+  summarise(across(Age, q123)) %>% 
+  unite(Age_median, Age_q1, col="Median_Q1", sep = " (") %>% 
+  unite(Median_Q1, Age_q3, col = "Median_Q1_Q3", sep = " - ") %>% 
+  unite(Age_mean, Age_sd, col="Mean_SD", sep = " (") %>% 
   mutate(across(c(Median_Q1_Q3, Mean_SD), ~ paste0(.x, ")"))) %>% 
   mutate(P_value = case_when(
     cancer_type == "Colon" ~ round(p_colon_age, 3),
