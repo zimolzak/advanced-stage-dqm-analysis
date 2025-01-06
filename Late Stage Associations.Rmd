@@ -18,10 +18,12 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r read, include=FALSE}
 lung_raw <- read_csv("VA Lung comprehensive.csv") %>%
-  mutate(cancer_type = "Lung")
+  mutate(cancer_type = "Lung", site="VA")
 
 colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
-  mutate(cancer_type = "Colon")
+  mutate(cancer_type = "Colon", site="VA")
+
+lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv")
 ```
 
 ```{r tidying}
@@ -289,3 +291,9 @@ X %>% mutate(
     - temporal vs MOD
     - CIs for percent of MOD
 - [ ] Geis data
+
+
+
+
+# Geisinger
+
