@@ -1,3 +1,4 @@
+geis_colnames <- c(
 "Reviewer",
 "ID",
 "Race",
@@ -25,7 +26,7 @@
 "signal_date",
 "dx_eval_init_date",
 "dx_eval_complete_date",
-"cancer_dx_considered"
+"cancer_dx_considered",
 "is_receiving_care_outside",
 "MOD_present_main_outcome",
 "MOD_delay_requesting",
@@ -61,3 +62,4 @@
 "pb_ref_other",
 "pb_ref_other_text",
 "free_text_notes"
+)
