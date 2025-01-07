@@ -7,3 +7,5 @@
 *.csv
 *.xlsx
 *~
+
+!geis_colnames.csv
