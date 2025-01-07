@@ -12,9 +12,9 @@
 "match_cancer_type",
 "match_dx_date",
 
-"New diagnosis of study cancer at the given date?",
-"Recurrence of prior cancer (same cancer type)?",
-"Is the stage data recorded at all in the clinical notes?",
+"confirm_new_dx",
+"is_recurrence",
+"is_stage_recorded",
 "match_stage",
 
 "ldct_offered",
@@ -31,11 +31,11 @@
 "dx_eval_init_date",
 "dx_eval_complete_date",
 
-"Was a cancer diagnosis considered at the time of the earliest cancer signal?",
-"Is there any evidence of the patient receiving care for the study cancer outside this healthcare system?",
-"Is there a missed opportunity (in general) in this case?",
-"Was there a delay (>7 days) in requesting follow-up for any of the cancer signals that the patient presented with?",
-"Was there a delay (>60 days) in completing requested follow-up for the cancer signal?",
+"cancer_dx_considered"
+"is_receiving_care_outside",
+"MOD_present_main_outcome",
+"MOD_delay_requesting",
+"MOD_delay_completing",
 
 pb_pat_delay
 pb_pat_adher
@@ -56,10 +56,6 @@ pb_dxt_interp_wrong
 pb_dxt_misident
 pb_dxt_other
 pb_dxt_other_text
-
-
-
-
 
 pb_fut_
 pb_fut_
