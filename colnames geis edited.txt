@@ -8,84 +8,56 @@
 "Stage_group",
 "Date",
 "Source",
-
-"match_cancer_type",
-"match_dx_date",
-
-"confirm_new_dx",
-"is_recurrence",
-"is_stage_recorded",
-"match_stage",
-
+"qc_match_cancer_type",
+"qc_match_dx_date",
+"qc_confirm_new_dx",
+"qc_is_recurrence",
+"qc_is_stage_recorded",
+"qc_match_stage",
 "ldct_offered",
 "ldct_location",
 "ldct_results",
 "ldct_declined",
-
 "signal_present",
 "signal_multiple",
 "signal_type",
 "signal_other_text",
 "signal_date",
-
 "dx_eval_init_date",
 "dx_eval_complete_date",
-
 "cancer_dx_considered"
 "is_receiving_care_outside",
 "MOD_present_main_outcome",
 "MOD_delay_requesting",
 "MOD_delay_completing",
-
-pb_pat_delay
-pb_pat_adher
-pb_pat_other
-pb_pat_other_text
-
-pb_ppe_history
-pb_ppe_physical
-pb_ppe_ordering
-pb_ppe_review
-pb_ppe_integra
-pb_ppe_other
-pb_ppe_other_text
-
-pb_dxt_not_done
-pb_dxt_done_wrong
-pb_dxt_interp_wrong
-pb_dxt_misident
-pb_dxt_other
-pb_dxt_other_text
-
-pb_fut_
-pb_fut_
-pb_fut_
-pb_fut_
-pb_fut_
-pb_fut_
-pb_fut_
-pb_fut_
-
-"Follow-up and Tracking (select all that apply) (choice=Problems with timely follow-up of abnormal diagnostic test results)",
-"Follow-up and Tracking (select all that apply) (choice=Problems with scheduling of appropriate and/or timely follow-up visits)",
-"Follow-up and Tracking (select all that apply) (choice=Problems with diagnostic specialties returning test results to clinicians)",
-"Follow-up and Tracking (select all that apply) (choice=Problems with clinicians reviewing test results)",
-"Follow-up and Tracking (select all that apply) (choice=Problems with clinicians documenting action or response to test results)",
-"Follow-up and Tracking (select all that apply) (choice=Problems with monitoring patients through follow-up)",
-"Follow-up and Tracking (select all that apply) (choice=Other)",
-"Other(Specify)...57",
-
-pb_ref_
-pb_ref_
-pb_ref_
-pb_ref_
-pb_ref_
-pb_ref_
-
-"Referrals (select all that apply) (choice=Problem initiating referral)",
-"Referrals (select all that apply) (choice=Lack of appropriate actions on requested consultation)",
-"Referrals (select all that apply) (choice=Communication breakdown from consultant to referring provider)",
-"Referrals (select all that apply) (choice=Other)",
-"Other(Specify)...62",
-
-"MOD in brief"
+"pb_pat_delay",
+"pb_pat_adher",
+"pb_pat_other",
+"pb_pat_other_text",
+"pb_ppe_history",
+"pb_ppe_physical",
+"pb_ppe_ordering",
+"pb_ppe_review",
+"pb_ppe_integra",
+"pb_ppe_other",
+"pb_ppe_other_text",
+"pb_dxt_not_done",
+"pb_dxt_done_wrong",
+"pb_dxt_interp_wrong",
+"pb_dxt_misident",
+"pb_dxt_other",
+"pb_dxt_other_text",
+"pb_fut_fu_tests",
+"pb_fut_sched_visits",
+"pb_fut_return_results",
+"pb_fut_review_results",
+"pb_fut_document_action",
+"pb_fut_monitor_pt",
+"pb_fut_other",
+"pb_fut_other_text",
+"pb_ref_initiate",
+"pb_ref_actions",
+"pb_ref_comm_breakdown",
+"pb_ref_other",
+"pb_ref_other_text",
+"free_text_notes"
