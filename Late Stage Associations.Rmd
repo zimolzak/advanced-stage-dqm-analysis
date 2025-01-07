@@ -23,7 +23,9 @@ lung_raw <- read_csv("VA Lung comprehensive.csv") %>%
 colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
   mutate(cancer_type = "Colon", site="VA")
 
+source("geis-colnames.R")
 lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv")
+colnames(lung_geis_raw) <- geis_colnames
 ```
 
 ```{r tidying}
