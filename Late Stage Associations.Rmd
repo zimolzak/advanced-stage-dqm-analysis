@@ -25,7 +25,8 @@ colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
 
 source("geis-colnames.R")
 lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv")
-colnames(lung_geis_raw) <- geis_colnames
+geis_columns <- read_csv("geis_colnames.csv")
+colnames(lung_geis_raw) <- geis_columns$name
 ```
 
 ```{r tidying}
