@@ -31,7 +31,16 @@ lung_geis_raw <- read_csv(
 )
 colnames(lung_geis_raw) <- geis_columns$name
 lung_geis_raw <- lung_geis_raw %>%
-  mutate(cancer_type = "Lung", site = "Geisinger")
+  mutate(
+    cancer_type = "Lung",
+    site = "Geisinger",
+    MOD_definite = case_when(
+      MOD_present_main_outcome == "Yes" ~ TRUE,
+      MOD_present_main_outcome == "No" ~ FALSE,
+      MOD_present_main_outcome == "Unsure" ~ FALSE,
+      TRUE ~ NA
+    )
+  )
 ```
 
 ```{r tidying}
@@ -62,7 +71,7 @@ lung <- all_data %>% filter(cancer_type == "Lung")
 
 
 
-# Colon
+# Colon associations with advanced stage
 
 ```{r test-colon-sex, include=FALSE}
 tab_colon_sex <- table(colon$Sex, colon$Stage)
@@ -115,7 +124,7 @@ p_colon_age <- wilc_colon_age$p.value
 
 
 
-# Lung
+# Lung associations with advanced stage
 
 ```{r test-lung-sex, include=FALSE}
 tab_lung_sex <- table(lung$Sex, lung$Stage)
@@ -305,3 +314,14 @@ X %>% mutate(
 
 # Geisinger
 
+```{r geis-table-ci}
+gmod <- lung_geis_raw %>% 
+  count(MOD_definite) %>% 
+  pivot_wider(names_from = MOD_definite, values_from = n, names_prefix = "MOD_") %>% 
+  mutate(
+    denom = MOD_FALSE + MOD_TRUE,
+    wilson.poi = binconf(MOD_TRUE, denom)[,"PointEst"],
+    wilson.low = binconf(MOD_TRUE, denom)[,"Lower"],
+    wilson.upp = binconf(MOD_TRUE, denom)[,"Upper"]
+  )
+```
