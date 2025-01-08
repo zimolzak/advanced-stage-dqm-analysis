@@ -5,7 +5,7 @@ f,Race
 f,Ethnicity
 f,Gender
 c,Age
-f,cancer_type_detailed
+c,cancer_type_detailed
 f,Stage_group
 ?,Date
 c,Source
@@ -16,7 +16,7 @@ f,qc_is_recurrence
 f,qc_is_stage_recorded
 f,qc_match_stage
 f,ldct_offered
-?,ldct_location
+?,ldct_date
 c,ldct_results
 f,ldct_declined
 f,signal_present
