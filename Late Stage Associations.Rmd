@@ -30,6 +30,7 @@ lung_geis_raw <- read_csv(
   col_types = coltype_spec
 )
 colnames(lung_geis_raw) <- geis_columns$name
+lung_geis_raw <- lung_geis_raw %>% mutate(cancer_type = "Lung", site = "Geisinger")
 ```
 
 ```{r tidying}
