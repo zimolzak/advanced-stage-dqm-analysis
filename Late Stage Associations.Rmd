@@ -13,7 +13,7 @@ library(knitr)
 library(tidyr)
 library(Hmisc)
 
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE)  # Set default to "Run but don't show code."
 ```
 
 ```{r read, include=FALSE}
@@ -30,7 +30,8 @@ lung_geis_raw <- read_csv(
   col_types = coltype_spec
 )
 colnames(lung_geis_raw) <- geis_columns$name
-lung_geis_raw <- lung_geis_raw %>% mutate(cancer_type = "Lung", site = "Geisinger")
+lung_geis_raw <- lung_geis_raw %>%
+  mutate(cancer_type = "Lung", site = "Geisinger")
 ```
 
 ```{r tidying}
