@@ -4,7 +4,7 @@ i,ID
 f,Race
 f,Ethnicity
 f,Gender
-c,Age
+d,Age
 c,cancer_type_detailed
 f,Stage_group
 ?,Date
