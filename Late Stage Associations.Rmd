@@ -314,14 +314,115 @@ X %>% mutate(
 
 # Geisinger
 
+## Chart review descriptives
+
 ```{r geis-table-ci}
-gmod <- lung_geis_raw %>% 
-  count(MOD_definite) %>% 
-  pivot_wider(names_from = MOD_definite, values_from = n, names_prefix = "MOD_") %>% 
+rbind(
+  lung_geis_raw %>% count(MOD_definite) %>% mutate(d=sum(n), Fact="MOD") %>% rename(Val=MOD_definite),
+  lung_geis_raw %>% count(Gender) %>% mutate(d=sum(n), Fact="Gender") %>% rename(Val=Gender),
+  lung_geis_raw %>% count(signal_present) %>% mutate(d=sum(n), Fact="Ca signal") %>% rename(Val=signal_present),
+  lung_geis_raw %>% filter(!is.na(cancer_dx_considered)) %>% count(cancer_dx_considered) %>% mutate(d=sum(n), Fact="Ca considered") %>% rename(Val=cancer_dx_considered)
+) %>% 
   mutate(
-    denom = MOD_FALSE + MOD_TRUE,
-    wilson.poi = binconf(MOD_TRUE, denom)[,"PointEst"],
-    wilson.low = binconf(MOD_TRUE, denom)[,"Lower"],
-    wilson.upp = binconf(MOD_TRUE, denom)[,"Upper"]
-  )
+    wilson.poi = binconf(n, d)[,"PointEst"],
+    wilson.low = binconf(n, d)[,"Lower"],
+    wilson.upp = binconf(n, d)[,"Upper"]
+  ) %>%
+  mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
+  unite(wilson.poi, wilson.low, col="Proportion_Wilson_CI", sep = " (") %>% 
+  unite(Proportion_Wilson_CI, wilson.upp, col = "Proportion_Wilson_CI", sep = " - ") %>% 
+  mutate(Proportion_Wilson_CI = paste0(Proportion_Wilson_CI, ")")) %>% 
+  relocate(Fact, Val, n, d) %>% 
+  kable()
 ```
+
+```{r geis-temporal}
+temporal <- lung_geis_raw %>% 
+  mutate(
+    sig_to_init = as.numeric(dx_eval_init_date - signal_date),
+    init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
+  )
+
+ggplot(temporal, aes(x=sig_to_init)) +
+  geom_histogram()
+
+ggplot(temporal, aes(x=init_to_complete)) +
+  geom_histogram()
+
+ggplot(temporal, aes(x=Age)) +
+  geom_histogram()
+
+temporal %>% 
+  summarise(across(sig_to_init:init_to_complete, q123)) %>% 
+  select(!contains(c("mean", "sd"))) %>% 
+  unite(sig_to_init_median, sig_to_init_q1, col="sig_to_init", sep=" (") %>% 
+  unite(sig_to_init, sig_to_init_q3, col="sig_to_init", sep=" - ") %>% 
+  unite(init_to_complete_median, init_to_complete_q1, col="init_to_complete", sep=" (") %>% 
+  unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
+  mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
+  kable()
+
+```
+
+## Associations
+
+```{r geis-temporal-assoc}
+
+
+ggplot(data = temporal, aes(sig_to_init)) +
+  geom_histogram() +
+  facet_grid(rows="Gender")
+
+ggplot(data = temporal, aes(init_to_complete)) +
+  geom_histogram() +
+  facet_grid(rows="Gender")
+
+temporal %>% 
+  group_by(Gender) %>% 
+  summarise(across(sig_to_init:init_to_complete, q123)) %>% 
+  select(!contains(c("mean", "sd"))) %>% 
+  unite(sig_to_init_median, sig_to_init_q1, col="sig_to_init", sep=" (") %>% 
+  unite(sig_to_init, sig_to_init_q3, col="sig_to_init", sep=" - ") %>% 
+  unite(init_to_complete_median, init_to_complete_q1, col="init_to_complete", sep=" (") %>% 
+  unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
+  mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
+  kable()
+
+wilc_s2i_gender <- wilcox.test(
+  temporal %>% filter(Gender == "M") %>% pull(sig_to_init),
+  temporal %>% filter(Gender == "F") %>% pull(sig_to_init)
+)
+wilc_s2i_gender
+
+wilc_i2c_gender <- wilcox.test(
+  temporal %>% filter(Gender == "M") %>% pull(init_to_complete),
+  temporal %>% filter(Gender == "F") %>% pull(init_to_complete)
+)
+wilc_i2c_gender
+
+ggplot(temporal, aes(x=Age, y=sig_to_init)) +
+  geom_jitter(alpha=0.5) +
+  scale_y_log10()
+
+ggplot(temporal, aes(x=Age, y=init_to_complete)) +
+  geom_jitter(alpha=0.5) +
+  scale_y_log10()
+ggplot(temporal, aes(x=Age, y=init_to_complete)) +
+  geom_bin_2d(bins=10)
+
+ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
+  geom_jitter(alpha=0.5) +
+  scale_y_log10() + scale_x_log10()
+ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
+  geom_hex(bins=10) +
+  scale_y_log10() + scale_x_log10()
+ggplot(temporal, aes(x=sig_to_init + 0.1, y=init_to_complete + 0.1)) +
+  geom_density_2d() + geom_jitter(alpha=0.5) +
+  scale_y_log10() + scale_x_log10()
+
+cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
+cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat signif
+cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat signif
+
+```
+
