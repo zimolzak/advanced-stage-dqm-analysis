@@ -17,30 +17,26 @@ knitr::opts_chunk$set(echo = FALSE)  # Set default to "Run but don't show code."
 ```
 
 ```{r read, include=FALSE}
-lung_raw <- read_csv("VA Lung comprehensive.csv") %>%
-  mutate(cancer_type = "Lung", site="VA")
 
-colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
-  mutate(cancer_type = "Colon", site="VA")
+# Column setup
 
 geis_columns <- read_csv("geis_colnames.csv")
 coltype_spec <- paste0(geis_columns$type, collapse="")
-lung_geis_raw <- read_csv(
-  "final lung LS for Houston de-id Divvy 3-28-22.csv",
-  col_types = coltype_spec
-)
-colnames(lung_geis_raw) <- geis_columns$name
-lung_geis_raw <- lung_geis_raw %>%
-  mutate(
-    cancer_type = "Lung",
-    site = "Geisinger",
-    MOD_definite = case_when(
-      MOD_present_main_outcome == "Yes" ~ TRUE,
-      MOD_present_main_outcome == "No" ~ FALSE,
-      MOD_present_main_outcome == "Unsure" ~ FALSE,
-      TRUE ~ NA
-    )
-  )
+
+# Imports
+
+lung_raw <- read_csv("VA Lung comprehensive.csv") %>% 
+  mutate(cancer_type = "Lung", site="VA")
+colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
+  mutate(cancer_type = "Colon", site="VA")
+lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv", col_types = coltype_spec) %>% 
+  mutate(cancer_type = "Lung", site="Geisinger")
+colon_geis_raw <- read_csv("Late Stage CRC Final DU 1-26-22.csv") %>% 
+  mutate(cancer_type = "Colon", site="Geisinger")
+lung_va_raw <- read_csv("VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
+  mutate(cancer_type = "Lung", site="VA")
+colon_va_raw <- read_csv("VA Colon stage review deid+MM3_CRC_Export.csv") %>% 
+  mutate(cancer_type = "Colon", site="VA")
 ```
 
 ```{r tidying}
@@ -66,7 +62,30 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
 
 colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
+
+colnames(lung_geis_raw) <- geis_columns$name
+
+lung_geis_raw <- lung_geis_raw %>%
+  mutate(
+    MOD_definite = case_when(
+      MOD_present_main_outcome == "Yes" ~ TRUE,
+      MOD_present_main_outcome == "No" ~ FALSE,
+      MOD_present_main_outcome == "Unsure" ~ FALSE,
+      TRUE ~ NA
+    )
+  )
+
+# FIXME - refactor Sex = Gender
 ```
+
+List of vars that I actually analyze:
+
+- Sex
+- Stage (early/advanced)
+- Race
+- Age
+- cancer_type
+- site (VA/Geisinger)
 
 
 
@@ -197,6 +216,8 @@ all_data %>%
 
 # Association tables
 
+## Advanced stage percentages, by demographics
+
 ```{r categorical-assoc}
 assoc_r <- all_data %>%
   count(cancer_type, Stage, Race) %>%
@@ -236,6 +257,8 @@ assoc %>%
   kable()
 ```
 
+# Age distributions, by cancer and advanced-stage status
+
 ```{r age-assoc}
 q123 <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
@@ -259,39 +282,7 @@ all_data %>%
   kable()
 ```
 
-FIXME - probably widen this out with col names like `Colon_VA`.
-
-
-
-
-# For later
-
-Package `Hmisc` and function `binconf()` ?
-
-```{r ci-example, echo=TRUE}
-X <- data.frame(succ = c(52,76,64,68), denom=c(90,100,96,100))
-
-X %>% mutate(
-  ciw.poi = binconf(succ, denom)[,"PointEst"],
-  ciw.low = binconf(succ, denom)[,"Lower"],
-  ciw.upp = binconf(succ, denom)[,"Upper"],
-  
-  cia.poi = binconf(succ, denom, method = "asymptotic")[,"PointEst"],
-  cia.low = binconf(succ, denom, method = "asymptotic")[,"Lower"],
-  cia.upp = binconf(succ, denom, method = "asymptotic")[,"Upper"],
-) %>%
-  mutate(across(starts_with("ci"), ~ round(.x * 100, 1) )) %>% 
-
-  unite(ciw.poi, ciw.low, col="Proportion_Wilson_CI", sep = " (") %>% 
-  unite(Proportion_Wilson_CI, ciw.upp, col = "Proportion_Wilson_CI", sep = " - ") %>% 
-  unite(cia.poi, cia.low, col="Proportion_Wald_CI", sep = " (") %>% 
-  unite(Proportion_Wald_CI, cia.upp, col = "Proportion_Wald_CI", sep = " - ") %>% 
-  mutate(across(
-    c(Proportion_Wilson_CI, Proportion_Wald_CI),
-    ~ paste0(.x, ")")   # neat trick to add close paren
-  )) %>%
-  kable()
-```
+FIXME - probably widen this out with column names like `Colon_VA`.
 
 
 
@@ -307,7 +298,7 @@ X %>% mutate(
     - temporal vs demographic
     - temporal vs MOD
     - CIs for percent of MOD
-- [ ] Geis data
+- [ ] Geisinger data
 
 
 
@@ -425,4 +416,3 @@ cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat s
 cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat signif
 
 ```
-
