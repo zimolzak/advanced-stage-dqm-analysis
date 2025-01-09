@@ -29,8 +29,8 @@ lung_raw <- read_csv("VA Lung comprehensive.csv") %>%
   mutate(cancer_type = "Lung", site="VA")
 colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
   mutate(cancer_type = "Colon", site="VA")
-lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv", col_types = coltype_spec) %>% 
-  mutate(cancer_type = "Lung", site="Geisinger")
+lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv", col_types = coltype_spec)
+  # mutate *after* assigning column names.
 colon_geis_raw <- read_csv("Late Stage CRC Final DU 1-26-22.csv") %>% 
   mutate(cancer_type = "Colon", site="Geisinger")
 lung_va_raw <- read_csv("VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
@@ -67,15 +67,16 @@ colnames(lung_geis_raw) <- geis_columns$name
 
 lung_geis_raw <- lung_geis_raw %>%
   mutate(
+    cancer_type = "Lung",
+    site="Geisinger",
     MOD_definite = case_when(
       MOD_present_main_outcome == "Yes" ~ TRUE,
       MOD_present_main_outcome == "No" ~ FALSE,
       MOD_present_main_outcome == "Unsure" ~ FALSE,
       TRUE ~ NA
     )
-  )
-
-# FIXME - refactor Sex = Gender
+  ) %>% 
+  rename(Sex = Gender)
 ```
 
 List of vars that I actually analyze:
@@ -310,7 +311,7 @@ FIXME - probably widen this out with column names like `Colon_VA`.
 ```{r geis-table-ci}
 rbind(
   lung_geis_raw %>% count(MOD_definite) %>% mutate(d=sum(n), Fact="MOD") %>% rename(Val=MOD_definite),
-  lung_geis_raw %>% count(Gender) %>% mutate(d=sum(n), Fact="Gender") %>% rename(Val=Gender),
+  lung_geis_raw %>% count(Sex) %>% mutate(d=sum(n), Fact="Sex") %>% rename(Val=Sex),
   lung_geis_raw %>% count(signal_present) %>% mutate(d=sum(n), Fact="Ca signal") %>% rename(Val=signal_present),
   lung_geis_raw %>% filter(!is.na(cancer_dx_considered)) %>% count(cancer_dx_considered) %>% mutate(d=sum(n), Fact="Ca considered") %>% rename(Val=cancer_dx_considered)
 ) %>% 
@@ -358,18 +359,16 @@ temporal %>%
 ## Associations
 
 ```{r geis-temporal-assoc}
-
-
 ggplot(data = temporal, aes(sig_to_init)) +
   geom_histogram() +
-  facet_grid(rows="Gender")
+  facet_grid(rows="Sex")
 
 ggplot(data = temporal, aes(init_to_complete)) +
   geom_histogram() +
-  facet_grid(rows="Gender")
+  facet_grid(rows="Sex")
 
 temporal %>% 
-  group_by(Gender) %>% 
+  group_by(Sex) %>% 
   summarise(across(sig_to_init:init_to_complete, q123)) %>% 
   select(!contains(c("mean", "sd"))) %>% 
   unite(sig_to_init_median, sig_to_init_q1, col="sig_to_init", sep=" (") %>% 
@@ -380,14 +379,14 @@ temporal %>%
   kable()
 
 wilc_s2i_gender <- wilcox.test(
-  temporal %>% filter(Gender == "M") %>% pull(sig_to_init),
-  temporal %>% filter(Gender == "F") %>% pull(sig_to_init)
+  temporal %>% filter(Sex == "M") %>% pull(sig_to_init),
+  temporal %>% filter(Sex == "F") %>% pull(sig_to_init)
 )
 wilc_s2i_gender
 
 wilc_i2c_gender <- wilcox.test(
-  temporal %>% filter(Gender == "M") %>% pull(init_to_complete),
-  temporal %>% filter(Gender == "F") %>% pull(init_to_complete)
+  temporal %>% filter(Sex == "M") %>% pull(init_to_complete),
+  temporal %>% filter(Sex == "F") %>% pull(init_to_complete)
 )
 wilc_i2c_gender
 
@@ -412,7 +411,6 @@ ggplot(temporal, aes(x=sig_to_init + 0.1, y=init_to_complete + 0.1)) +
   scale_y_log10() + scale_x_log10()
 
 cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
-cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat signif
-cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat signif
-
+cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat significant
+cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat significant
 ```
