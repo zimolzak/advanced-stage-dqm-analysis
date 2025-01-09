@@ -101,6 +101,19 @@ List of vars that I actually analyze:
 
 # Simple descriptives
 
+```{r function-percentage}
+percentage_text <- function(n, d) {
+  ns <- as.character(n)
+  ds <- as.character(d)
+  ps <- as.character(round(n / d * 100, 1))
+  final_s <- paste0(
+    ns, " / ", ds, " (", ps, "%)"
+  )
+  return(final_s)
+}
+```
+
+
 ```{r table-1-or-so}
 rbind(
   all_data %>% 
@@ -114,7 +127,15 @@ rbind(
   filter(Stage != "Early") %>% 
   bind_rows(geisinger_comprehensive) %>% 
   arrange(desc(site), desc(cancer_type), Stage) %>% 
-  pivot_wider(names_from = c(site, cancer_type, Stage), values_from = n)
+  pivot_wider(names_from = c(site, cancer_type, Stage), values_from = n) %>% 
+  mutate(
+    VA_Lung = percentage_text(VA_Lung_Advanced, VA_Lung_Total),
+    VA_Colon = percentage_text(VA_Colon_Advanced, VA_Colon_Total),
+    Geisinger_Lung = percentage_text(Geisinger_Lung_Advanced, Geisinger_Lung_Total),
+    Geisinger_Colon = percentage_text(Geisinger_Colon_Advanced, Geisinger_Colon_Total),
+    .keep = "unused"
+  ) %>% 
+  kable()
 ```
 
 
@@ -255,8 +276,8 @@ assoc <- bind_rows(assoc_r, assoc_s) %>%
     Lung_Denom = Lung_Early + Lung_Advanced,
     Colon_Rate = round(Colon_Advanced / Colon_Denom * 100, 1),
     Lung_Rate = round(Lung_Advanced / Lung_Denom * 100, 1),
-    p_colon = case_when(Factor == "Race" ~ round(p_colon_race, 3), TRUE ~ round(p_colon_sex, 3)),
-    p_lung = case_when(Factor == "Race" ~ round(p_lung_race, 3), TRUE ~ round(p_lung_sex, 3))
+    p_colon = case_when(Factor == "Race" ~ round(p_colon_race, 3), Factor == "Sex" ~ round(p_colon_sex, 3)),
+    p_lung = case_when(Factor == "Race" ~ round(p_lung_race, 3), Factor == "Sex" ~ round(p_lung_sex, 3))
   ) %>%
   select(
     Factor, Level,
