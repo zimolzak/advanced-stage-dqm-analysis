@@ -29,6 +29,14 @@ lung_raw <- read_csv("VA Lung comprehensive.csv") %>%
   mutate(cancer_type = "Lung", site="VA")
 colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
   mutate(cancer_type = "Colon", site="VA")
+geisinger_comprehensive <- tribble(
+  ~site, ~cancer_type, ~n, ~Stage,
+  "Geisinger", "Lung", 1699, "Advanced",
+  "Geisinger", "Lung", 2914, "Total",
+  "Geisinger", "Colon", 227, "Advanced",
+  "Geisinger", "Colon", 627, "Total",
+)
+
 lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv", col_types = coltype_spec)
   # mutate *after* assigning column names.
 colon_geis_raw <- read_csv("Late Stage CRC Final DU 1-26-22.csv") %>% 
@@ -91,7 +99,30 @@ List of vars that I actually analyze:
 
 
 
-# Colon associations with advanced stage
+# Simple descriptives
+
+```{r table-1-or-so}
+rbind(
+  all_data %>% 
+    group_by(site, cancer_type) %>% 
+    count() %>%
+    mutate(Stage = "Total"),
+  all_data %>% 
+    group_by(site, cancer_type) %>% 
+    count(Stage)
+) %>%
+  filter(Stage != "Early") %>% 
+  bind_rows(geisinger_comprehensive) %>% 
+  arrange(desc(site), desc(cancer_type), Stage) %>% 
+  pivot_wider(names_from = c(site, cancer_type, Stage), values_from = n)
+```
+
+
+
+
+
+
+# Colon associations with advanced stage (tests, age plots)
 
 ```{r test-colon-sex, include=FALSE}
 tab_colon_sex <- table(colon$Sex, colon$Stage)
@@ -144,7 +175,7 @@ p_colon_age <- wilc_colon_age$p.value
 
 
 
-# Lung associations with advanced stage
+# Lung associations with advanced stage (tests, age plots)
 
 ```{r test-lung-sex, include=FALSE}
 tab_lung_sex <- table(lung$Sex, lung$Stage)
@@ -202,19 +233,6 @@ t.test(
 
 
 
-# Aside: Detective work on race
-
-```{r detective, message=FALSE, warning=FALSE}
-all_data %>%
-  group_by(cancer_type, Race, PatientRace) %>%
-  summarise(count = n()) %>%
-  arrange(cancer_type, PatientRace) %>%
-  kable()
-```
-
-
-
-
 # Association tables
 
 ## Advanced stage percentages, by demographics
@@ -258,7 +276,7 @@ assoc %>%
   kable()
 ```
 
-# Age distributions, by cancer and advanced-stage status
+## Age distributions, by cancer and advanced-stage status
 
 ```{r age-assoc}
 q123 <- list(
@@ -296,9 +314,9 @@ FIXME - probably widen this out with column names like `Colon_VA`.
     - demographics (by health sys)
 - [ ] Manual review stats
     - description of temporal distribution
-    - temporal vs demographic
-    - temporal vs MOD
-    - CIs for percent of MOD
+    - temporal vs demographic (assoc)
+    - temporal vs MOD (assoc)
+    - CIs for percent of MOD (descriptive)
 - [ ] Geisinger data
 
 
@@ -307,6 +325,16 @@ FIXME - probably widen this out with column names like `Colon_VA`.
 # Geisinger
 
 ## Chart review descriptives
+
+Purely descriptive stats of the following:
+
+- MOD (percent)
+- sex (%)
+- Cancer signal preceiding, %
+- Cancer considered, %
+- signal to workup init, histogram and quartiles
+- init to complete time, histogram and quartiles
+- age, histogram
 
 ```{r geis-table-ci}
 rbind(
@@ -353,7 +381,6 @@ temporal %>%
   unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
   mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
   kable()
-
 ```
 
 ## Associations
