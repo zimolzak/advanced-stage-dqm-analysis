@@ -47,7 +47,7 @@ colon_va_raw <- read_csv("VA Colon stage review deid+MM3_CRC_Export.csv") %>%
   mutate(cancer_type = "Colon", site="VA")
 ```
 
-```{r tidying}
+```{r tidy-comprehensive}
 all_data <- bind_rows(colon_raw, lung_raw) %>%
   mutate(
     Sex = case_when(PatientSex == 1 ~ "M",TRUE ~ "F"),
@@ -70,10 +70,12 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
 
 colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
+```
 
+```{r tidy-charts}
 colnames(lung_geis_raw) <- geis_columns$name
 
-lung_geis_raw <- lung_geis_raw %>%
+reviewed_geis_lung <- lung_geis_raw %>%
   mutate(
     cancer_type = "Lung",
     site="Geisinger",
@@ -86,6 +88,8 @@ lung_geis_raw <- lung_geis_raw %>%
   ) %>% 
   rename(Sex = Gender)
 ```
+
+# Intro
 
 List of vars that I actually analyze:
 
@@ -100,7 +104,7 @@ List of vars that I actually analyze:
 
 - [x] `lung_raw`
 - [x] `colon_raw` (both VA comprehensive)
-- [x] `lung_geis_raw` (Geisinger chart review)
+- [x] `reviewed_geis_lung` (Geisinger chart review)
 - [ ] `colon_geis_raw`
 - [ ] `lung_va_raw`
 - [ ] `colon_va_raw`
@@ -110,17 +114,15 @@ List of vars that I actually analyze:
 # Simple descriptives
 
 ```{r function-percentage}
-percentage_text <- function(n, d) {
-  ns <- as.character(n)
-  ds <- as.character(d)
-  ps <- as.character(round(n / d * 100, 1))
-  final_s <- paste0(
-    ns, " / ", ds, " (", ps, "%)"
-  )
-  return(final_s)
+percentage_text <- function(numerator, denominator) {
+  # It appears to be already vectorized.
+  ntext <- as.character(numerator)
+  dtext <- as.character(denominator)
+  ptext <- as.character(round(numerator / denominator * 100, 1))
+  final_text <- paste0(ntext, " / ", dtext, " (", ptext, "%)")
+  return(final_text)
 }
 ```
-
 
 ```{r table-1-or-so}
 rbind(
@@ -367,26 +369,33 @@ Purely descriptive stats of the following:
 
 ```{r geis-table-ci}
 rbind(
-  lung_geis_raw %>% count(MOD_definite) %>% mutate(d=sum(n), Fact="MOD") %>% rename(Val=MOD_definite),
-  lung_geis_raw %>% count(Sex) %>% mutate(d=sum(n), Fact="Sex") %>% rename(Val=Sex),
-  lung_geis_raw %>% count(signal_present) %>% mutate(d=sum(n), Fact="Ca signal") %>% rename(Val=signal_present),
-  lung_geis_raw %>% filter(!is.na(cancer_dx_considered)) %>% count(cancer_dx_considered) %>% mutate(d=sum(n), Fact="Ca considered") %>% rename(Val=cancer_dx_considered)
+  reviewed_geis_lung %>% count(MOD_definite) %>% mutate(d=sum(n), Fact="MOD") %>% rename(Val=MOD_definite),
+  reviewed_geis_lung %>% count(Sex) %>% mutate(d=sum(n), Fact="Sex") %>% rename(Val=Sex),
+  reviewed_geis_lung %>% count(signal_present) %>% mutate(d=sum(n), Fact="Ca signal") %>% rename(Val=signal_present),
+  reviewed_geis_lung %>% filter(!is.na(cancer_dx_considered)) %>% count(cancer_dx_considered) %>% mutate(d=sum(n), Fact="Ca considered") %>% rename(Val=cancer_dx_considered)
 ) %>% 
   mutate(
+    Percentage = percentage_text(n, d),
     wilson.poi = binconf(n, d)[,"PointEst"],
     wilson.low = binconf(n, d)[,"Lower"],
-    wilson.upp = binconf(n, d)[,"Upper"]
+    wilson.upp = binconf(n, d)[,"Upper"],
   ) %>%
   mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
-  unite(wilson.poi, wilson.low, col="Proportion_Wilson_CI", sep = " (") %>% 
-  unite(Proportion_Wilson_CI, wilson.upp, col = "Proportion_Wilson_CI", sep = " - ") %>% 
-  mutate(Proportion_Wilson_CI = paste0(Proportion_Wilson_CI, ")")) %>% 
-  relocate(Fact, Val, n, d) %>% 
+  unite(wilson.low, wilson.upp, col="Wilson_CI", sep = " - ") %>% 
+  select(Fact, Val, Percentage, Wilson_CI) %>% 
+  filter(
+    # Exclude a few rows. It is redundant to say 25% true, 75% false. Just
+    # mention one of these %s.
+    (Fact == "MOD" & Val == TRUE) |
+      (Fact == "Sex" & Val == "M") |
+      (Fact == "Ca signal" & Val == "Yes") |
+      (Fact == "Ca considered" & Val == "No")
+  ) %>% 
   kable()
 ```
 
 ```{r geis-temporal}
-temporal <- lung_geis_raw %>% 
+temporal <- reviewed_geis_lung %>% 
   mutate(
     sig_to_init = as.numeric(dx_eval_init_date - signal_date),
     init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
