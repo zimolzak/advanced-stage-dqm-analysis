@@ -96,6 +96,14 @@ List of vars that I actually analyze:
 - cancer_type
 - site (VA/Geisinger)
 
+## Which files/datasets to tidy
+
+- [x] `lung_raw`
+- [x] `colon_raw` (both VA comprehensive)
+- [x] `lung_geis_raw` (Geisinger chart review)
+- [ ] `colon_geis_raw`
+- [ ] `lung_va_raw`
+- [ ] `colon_va_raw`
 
 
 
