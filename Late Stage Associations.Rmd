@@ -29,6 +29,7 @@ lung_raw <- read_csv("VA Lung comprehensive.csv") %>%
   mutate(cancer_type = "Lung", site="VA")
 colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
   mutate(cancer_type = "Colon", site="VA")
+
 geisinger_comprehensive <- tribble(
   ~site, ~cancer_type, ~n, ~Stage,
   "Geisinger", "Lung", 1699, "Advanced",
@@ -88,6 +89,11 @@ reviewed_geis_lung <- lung_geis_raw %>%
   ) %>% 
   rename(Sex = Gender) %>% 
   relocate(site, cancer_type)
+
+reviewed_geis_colon <- colon_geis_raw %>% 
+  rename(
+    Age = `Age:`
+  )
 ```
 
 # Intro
@@ -112,7 +118,8 @@ List of vars that I actually analyze:
 
 
 
-# Simple descriptives
+
+# Descriptives: comprehensive data
 
 ```{r function-percentage}
 percentage_text <- function(numerator, denominator) {
