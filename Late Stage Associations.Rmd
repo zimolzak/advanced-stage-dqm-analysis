@@ -369,10 +369,26 @@ Purely descriptive stats of the following:
 
 ```{r geis-table-ci}
 rbind(
-  reviewed_geis_lung %>% count(MOD_definite) %>% mutate(d=sum(n), Fact="MOD") %>% rename(Val=MOD_definite),
-  reviewed_geis_lung %>% count(Sex) %>% mutate(d=sum(n), Fact="Sex") %>% rename(Val=Sex),
-  reviewed_geis_lung %>% count(signal_present) %>% mutate(d=sum(n), Fact="Ca signal") %>% rename(Val=signal_present),
-  reviewed_geis_lung %>% filter(!is.na(cancer_dx_considered)) %>% count(cancer_dx_considered) %>% mutate(d=sum(n), Fact="Ca considered") %>% rename(Val=cancer_dx_considered)
+  # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
+  # Each will have these columns: Fact, Val, n, d
+  # Such as: Sex, F, 55, 100.
+  reviewed_geis_lung %>%
+    count(MOD_definite) %>%
+    mutate(d = sum(n), Fact = "MOD") %>%
+    rename(Val = MOD_definite),
+  reviewed_geis_lung %>%
+    count(Sex) %>%
+    mutate(d = sum(n), Fact = "Sex") %>%
+    rename(Val = Sex),
+  reviewed_geis_lung %>%
+    count(signal_present) %>%
+    mutate(d = sum(n), Fact = "Ca signal") %>%
+    rename(Val = signal_present),
+  reviewed_geis_lung %>%
+    filter(!is.na(cancer_dx_considered)) %>%
+    count(cancer_dx_considered) %>%
+    mutate(d = sum(n), Fact = "Ca considered") %>%
+    rename(Val = cancer_dx_considered)
 ) %>% 
   mutate(
     Percentage = percentage_text(n, d),
