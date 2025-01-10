@@ -93,6 +93,28 @@ reviewed_geis_lung <- lung_geis_raw %>%
 reviewed_geis_colon <- colon_geis_raw %>% 
   rename(
     Age = `Age:`
+  ) %>% 
+  mutate(
+    Sex = as.factor(`Gender:`),
+    Race = as.factor(case_when(
+      `Ethnicity:` == "HISPANIC OR LATINO" ~ "Hispanic or Latino",
+      TRUE ~ `Race:`
+    )),
+    Location = as.factor(`Location:`),
+    signal_present = as.factor(
+      `Prior to index presentation, were there any cancer signals (important/relevant findings)?`
+    ),
+    MOD_present_main_outcome = as.factor(`Is there a missed opportunity (in general) in this case?`),
+    cancer_dx_considered = as.factor(`Was a cancer diagnosis considered at the time of the earliest cancer signal?`),
+    signal_date = as.Date(`When was it recorded?`),
+    dx_eval_init_date = as.Date(`When was cancer-related diagnostic evaluation initiated?`),
+    dx_eval_complete_date = as.Date(`When was the evaluation completed?`),
+    .keep = "unused"
+  ) %>% 
+  relocate(
+    site, cancer_type, Age, Sex, Race, Location,
+    signal_present, cancer_dx_considered, MOD_present_main_outcome,
+    signal_date, dx_eval_init_date, dx_eval_complete_date
   )
 ```
 
@@ -106,6 +128,12 @@ List of vars that I actually analyze:
 - Age
 - cancer_type
 - site (VA/Geisinger)
+- `MOD_present_main_outcome`
+- `signal_present`
+- `cancer_dx_considered`
+- `signal_date`
+- `dx_eval_init_date`
+- `dx_eval_complete_date`
 
 ## Which files/datasets to tidy
 
@@ -378,7 +406,8 @@ Purely descriptive stats of the following:
 ```{r geis-table-ci}
 rbind(
   # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
-  # Each will have these columns: site, cancer_type, Fact, Val, n, d
+  # (MOD, sex, signal, considered)
+  # Each sub-table has these columns: site, cancer_type, Fact, Val, n, d
   # Such as: Sex, F, 55, 100.
   reviewed_geis_lung %>%
     count(site, cancer_type, MOD_definite) %>%
