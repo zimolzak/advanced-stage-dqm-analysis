@@ -86,7 +86,8 @@ reviewed_geis_lung <- lung_geis_raw %>%
       TRUE ~ NA
     )
   ) %>% 
-  rename(Sex = Gender)
+  rename(Sex = Gender) %>% 
+  relocate(site, cancer_type)
 ```
 
 # Intro
@@ -370,23 +371,23 @@ Purely descriptive stats of the following:
 ```{r geis-table-ci}
 rbind(
   # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
-  # Each will have these columns: Fact, Val, n, d
+  # Each will have these columns: site, cancer_type, Fact, Val, n, d
   # Such as: Sex, F, 55, 100.
   reviewed_geis_lung %>%
-    count(MOD_definite) %>%
+    count(site, cancer_type, MOD_definite) %>%
     mutate(d = sum(n), Fact = "MOD") %>%
     rename(Val = MOD_definite),
   reviewed_geis_lung %>%
-    count(Sex) %>%
+    count(site, cancer_type, Sex) %>%
     mutate(d = sum(n), Fact = "Sex") %>%
     rename(Val = Sex),
   reviewed_geis_lung %>%
-    count(signal_present) %>%
+    count(site, cancer_type, signal_present) %>%
     mutate(d = sum(n), Fact = "Ca signal") %>%
     rename(Val = signal_present),
   reviewed_geis_lung %>%
     filter(!is.na(cancer_dx_considered)) %>%
-    count(cancer_dx_considered) %>%
+    count(site, cancer_type, cancer_dx_considered) %>%
     mutate(d = sum(n), Fact = "Ca considered") %>%
     rename(Val = cancer_dx_considered)
 ) %>% 
@@ -398,14 +399,14 @@ rbind(
   ) %>%
   mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
   unite(wilson.low, wilson.upp, col="Wilson_CI", sep = " - ") %>% 
-  select(Fact, Val, Percentage, Wilson_CI) %>% 
+  select(site, cancer_type, Fact, Val, Percentage, Wilson_CI) %>% 
   filter(
     # Exclude a few rows. It is redundant to say 25% true, 75% false. Just
     # mention one of these %s.
     (Fact == "MOD" & Val == TRUE) |
       (Fact == "Sex" & Val == "M") |
-      (Fact == "Ca signal" & Val == "Yes") |
-      (Fact == "Ca considered" & Val == "No")
+      (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
+      (Fact == "Ca considered" & Val == "No")  # Assume Unsure = considered.
   ) %>% 
   kable()
 ```
