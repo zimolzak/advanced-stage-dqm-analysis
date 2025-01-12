@@ -77,7 +77,7 @@ colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
 ```
 
-```{r tidy-chart-reviews}
+```{r tidy-chart-reviews, message=FALSE}
 colnames(lung_geis_raw) <- geis_columns$name
 
 reviewed_geis_lung <- lung_geis_raw %>%
@@ -153,6 +153,18 @@ reviewed_va_lung_colon <- lung_va_raw %>%
     signal_present, cancer_dx_considered, MOD_definite,
     signal_date, dx_eval_init_date, dx_eval_complete_date, signal_type
   )
+
+# FIXME - need to get all the VA date data
+
+reviewed_all <- bind_rows(
+    reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon
+  ) %>% 
+  select(
+    site, cancer_type, Age, Sex, Race, Location,
+    signal_present, cancer_dx_considered, MOD_definite,
+    signal_date, dx_eval_init_date, dx_eval_complete_date
+  ) %>% 
+  mutate(across(c(site, cancer_type), as.factor))
 ```
 
 ## Double-check VA MOD coding/conversion
@@ -451,47 +463,48 @@ Purely descriptive stats of the following:
 - init to complete time, histogram and quartiles
 - age, histogram
 
-```{r geis-table-ci}
-rbind(
+```{r review-table-ci}
+bind_rows(
+  
   # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
   # (MOD, sex, signal, considered)
-  # Each sub-table has these columns: site, cancer_type, Fact, Val, n, d
-  # Such as: Sex, F, 55, 100.
-  reviewed_geis_lung %>%
-    count(site, cancer_type, MOD_definite) %>%
-    mutate(d = sum(n), Fact = "MOD") %>%
-    rename(Val = MOD_definite),
-  reviewed_geis_lung %>%
-    count(site, cancer_type, Sex) %>%
-    mutate(d = sum(n), Fact = "Sex") %>%
-    rename(Val = Sex),
-  reviewed_geis_lung %>%
-    count(site, cancer_type, signal_present) %>%
-    mutate(d = sum(n), Fact = "Ca signal") %>%
-    rename(Val = signal_present),
-  reviewed_geis_lung %>%
+  # Each sub-table is like:
+  # site, cancer_type, Fact, Val, n, d
+  # VA,   Colon,       Sex,  F,   55, 100.
+  
+  reviewed_all %>% group_by(site, cancer_type) %>% 
+    count(site, cancer_type, MOD_definite) %>% filter(!is.na(MOD_definite)) %>%
+    mutate(d = sum(n), Fact = "MOD", Val=as.character(MOD_definite)) %>% select(site, cancer_type, Fact, Val, n, d),
+  reviewed_all %>% group_by(site, cancer_type) %>% 
+    count(site, cancer_type, Sex) %>% filter(!is.na(Sex)) %>%
+    mutate(d = sum(n), Fact = "Sex", Val=as.character(Sex)) %>% select(site, cancer_type, Fact, Val, n, d),
+  reviewed_all %>% group_by(site, cancer_type) %>% 
+    count(site, cancer_type, signal_present) %>% filter(!is.na(signal_present)) %>%
+    mutate(d = sum(n), Fact = "Ca signal", Val=as.character(signal_present)) %>% select(site, cancer_type, Fact, Val, n, d),
+  reviewed_all %>% group_by(site, cancer_type) %>% 
     filter(!is.na(cancer_dx_considered)) %>%
     count(site, cancer_type, cancer_dx_considered) %>%
-    mutate(d = sum(n), Fact = "Ca considered") %>%
-    rename(Val = cancer_dx_considered)
-) %>% 
+    mutate(d = sum(n), Fact = "Ca considered", Val=as.character(cancer_dx_considered)) %>% select(site, cancer_type, Fact, Val, n, d)
+  
+  ) %>% 
   mutate(
     Percentage = percentage_text(n, d),
-    wilson.poi = binconf(n, d)[,"PointEst"],
+    # wilson.poi = binconf(n, d)[,"PointEst"],  # We don't need this because of percentage_text().
     wilson.low = binconf(n, d)[,"Lower"],
     wilson.upp = binconf(n, d)[,"Upper"],
+    .keep = "unused"
   ) %>%
   mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
   unite(wilson.low, wilson.upp, col="Wilson_CI", sep = " - ") %>% 
-  select(site, cancer_type, Fact, Val, Percentage, Wilson_CI) %>% 
   filter(
-    # Exclude a few rows. It is redundant to say 25% true, 75% false. Just
+    # Exclude a few rows because it is redundant to say 25% true, 75% false. Just
     # mention one of these %s.
     (Fact == "MOD" & Val == TRUE) |
       (Fact == "Sex" & Val == "M") |
       (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
       (Fact == "Ca considered" & Val == "No")  # Assume Unsure = considered.
   ) %>% 
+  arrange(desc(site), desc(cancer_type), Fact) %>% 
   kable()
 ```
 
