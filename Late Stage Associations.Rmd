@@ -5,6 +5,8 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
+# Intro
+
 ```{r setup, include=FALSE}
 library(dplyr)
 library(readr)
@@ -73,7 +75,7 @@ colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
 ```
 
-```{r tidy-charts}
+```{r tidy-chart-reviews}
 colnames(lung_geis_raw) <- geis_columns$name
 
 reviewed_geis_lung <- lung_geis_raw %>%
@@ -89,12 +91,15 @@ reviewed_geis_lung <- lung_geis_raw %>%
   ) %>% 
   rename(Sex = Gender) %>% 
   relocate(
-    site, cancer_type
+    site, cancer_type, Age, Sex, Race,  # Location,
+    signal_present, cancer_dx_considered, MOD_present_main_outcome, MOD_definite,
+    signal_date, dx_eval_init_date, dx_eval_complete_date, signal_type
   )
 
 reviewed_geis_colon <- colon_geis_raw %>% 
   rename(
-    Age = `Age:`
+    Age = `Age:`,
+    modtext = `Is there a missed opportunity (in general) in this case?`
   ) %>% 
   mutate(
     Sex = as.factor(`Gender:`),
@@ -106,16 +111,22 @@ reviewed_geis_colon <- colon_geis_raw %>%
     signal_present = as.factor(
       `Prior to index presentation, were there any cancer signals (important/relevant findings)?`
     ),
-    MOD_present_main_outcome = as.factor(`Is there a missed opportunity (in general) in this case?`),
+    MOD_definite = case_when(
+      modtext == "Yes" ~ TRUE,
+      modtext == "No" ~ FALSE,
+      modtext == "Unsure" ~ FALSE,
+      TRUE ~ NA
+    ),
     cancer_dx_considered = as.factor(`Was a cancer diagnosis considered at the time of the earliest cancer signal?`),
     signal_date = as.Date(`When was it recorded?`),
     dx_eval_init_date = as.Date(`When was cancer-related diagnostic evaluation initiated?`),
     dx_eval_complete_date = as.Date(`When was the evaluation completed?`),
+    signal_type = as.factor(`What was the earliest cancer signal recorded?`),
     .keep = "unused"
   ) %>% 
   relocate(
     site, cancer_type, Age, Sex, Race, Location,
-    signal_present, cancer_dx_considered, MOD_present_main_outcome,
+    signal_present, cancer_dx_considered, MOD_definite,
     signal_date, dx_eval_init_date, dx_eval_complete_date
   )
 
@@ -124,20 +135,34 @@ reviewed_va_lung_colon <- lung_va_raw %>%
   mutate(
     signal_present = as.factor(RFYesNo),
     cancer_dx_considered = as.factor(RFInitialCancerDxConsidered),
-    MOD_present_main_outcome = as.factor(DxMOD),
-    signal_date = as.Date(RFInitialOccDateTime),
+    MOD_definite = case_when(
+      DxMOD == "Yes" ~ TRUE,
+      DxMOD == "No" ~ FALSE,
+      DxMOD == "Unsure" ~ FALSE,
+      TRUE ~ NA
+    ),
+    signal_date = as.Date(RFInitialOccDateTime),  # Sure, but these dates are all NA at present time.
     dx_eval_init_date = as.Date(RFInitialFUReqDateTime),
     dx_eval_complete_date = as.Date(RFInitialFUCompDateTime),
     signal_type = as.factor(RFInitialRF)
   ) %>% 
   relocate(
     site, cancer_type,  # Age, Sex, Race, Location,
-    signal_present, cancer_dx_considered, MOD_present_main_outcome,
+    signal_present, cancer_dx_considered, MOD_definite,
     signal_date, dx_eval_init_date, dx_eval_complete_date, signal_type
   )
 ```
 
-# Intro
+## Double-check VA MOD coding/conversion
+
+Original character in columns. New Boolean in rows.
+
+```{r doublecheck-va}
+table(reviewed_va_lung_colon$MOD_definite, reviewed_va_lung_colon$DxMOD, useNA = "ifany") %>% 
+  kable()
+```
+
+## Tidying summary
 
 List of vars that I actually analyze:
 
@@ -147,25 +172,22 @@ List of vars that I actually analyze:
 - Age
 - cancer_type
 - site (VA/Geisinger)
-- `MOD_present_main_outcome`
+- `MOD_present_main_outcome` $\to$ No. You should use `MOD_definite`
 - `signal_present`
 - `cancer_dx_considered`
 - `signal_date`
 - `dx_eval_init_date`
 - `dx_eval_complete_date`
+- `signal_type`: tidied but not (yet) used
 
-## Vars to consider tidying
-
-- type of red flag: `RFInitialRF` in VA
-
-## Which files/datasets to tidy
+## Dataset checklist
 
 - [x] `lung_raw`
 - [x] `colon_raw` (both VA comprehensive)
 - [x] `reviewed_geis_lung` (Geisinger chart review)
-- [ ] `colon_geis_raw`
-- [ ] `lung_va_raw`
-- [ ] `colon_va_raw`
+- [x] `colon_geis_raw`
+- [x] `lung_va_raw`
+- [x] `colon_va_raw`
 
 
 
@@ -211,8 +233,9 @@ rbind(
 
 
 
+# Associations: hypoth. tests and bivar. plots (comprehensive data)
 
-# Colon associations with advanced stage (tests, age plots)
+## Colon
 
 ```{r test-colon-sex, include=FALSE}
 tab_colon_sex <- table(colon$Sex, colon$Stage)
@@ -265,7 +288,7 @@ p_colon_age <- wilc_colon_age$p.value
 
 
 
-# Lung associations with advanced stage (tests, age plots)
+## Lung
 
 ```{r test-lung-sex, include=FALSE}
 tab_lung_sex <- table(lung$Sex, lung$Stage)
@@ -396,7 +419,7 @@ FIXME - probably widen this out with column names like `Colon_VA`.
 
 
 
-# To Do
+# To Do (reviewers)
 
 - [ ] Descriptive stats (large scale)
     - flow diagram
