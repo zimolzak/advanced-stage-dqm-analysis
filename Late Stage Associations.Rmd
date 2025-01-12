@@ -14,7 +14,7 @@ library(ggplot2)
 library(knitr)
 library(tidyr)
 library(Hmisc)
-# coming next: forcats
+library(forcats)
 # consider later: clean_names() from {janitor} 
 
 knitr::opts_chunk$set(echo = FALSE)  # Sets the default to "Run but don't show code."
@@ -164,7 +164,10 @@ reviewed_all <- bind_rows(
     signal_present, cancer_dx_considered, MOD_definite,
     signal_date, dx_eval_init_date, dx_eval_complete_date
   ) %>% 
-  mutate(across(c(site, cancer_type), as.factor))
+  mutate(
+    across(c(site, cancer_type), as.factor),
+    Sex = fct_collapse(Sex, M = "MALE", F = "FEMALE")
+  )
 ```
 
 ## Double-check VA MOD coding/conversion
