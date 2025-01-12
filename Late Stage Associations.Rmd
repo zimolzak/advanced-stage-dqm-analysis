@@ -248,6 +248,20 @@ rbind(
   kable()
 ```
 
+## For editor comment
+
+```{r pcp-stats}
+all_data %>%
+  group_by(site, cancer_type) %>%
+  summarise(
+    pts=n(), pcp1=sum(HasPCPBeforeCutOff) ,pcp2=sum(HasPCPAfterCutOff),
+    percent_before_cutoff=percentage_text(pcp1, pts),
+    percent_after_cutoff=percentage_text(pcp2, pts)
+  ) %>% 
+  select(site, cancer_type, percent_before_cutoff, percent_after_cutoff) %>% 
+  kable()
+```
+
 
 
 
@@ -440,17 +454,25 @@ FIXME - probably widen this out with column names like `Colon_VA`.
 
 # To Do (reviewers)
 
-- [ ] Descriptive stats (large scale)
-    - flow diagram
-    - missingness
-    - demographics (by health sys)
-- [ ] Manual review stats
+- Descriptive stats (large scale)
+    - flow diagram (R1 C1)
+        - [x] specifically about PCP visit
+    - [ ] missingness R1 C1. Specifically of stage.
+    - [x] demographics (by health sys)
+- Manual review stats
     - description of temporal distribution
+        - [ ] Ed: bin them with breaks at like 3, 6, 12 months.
     - temporal vs demographic (assoc)
     - temporal vs MOD (assoc)
-    - CIs for percent of MOD (descriptive)
-- [ ] Geisinger data
+    - really which reviewer wants assoc stats?
+    - [x] CIs for percent of MOD (descriptive)
+- [x] Geisinger data
 
+## Might not have
+
+- geisinger full data (pcp)
+- geisinger non-late-stage
+- VA $n = 100$ sample demographics
 
 
 
