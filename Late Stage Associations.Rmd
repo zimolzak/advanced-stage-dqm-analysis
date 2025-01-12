@@ -88,7 +88,9 @@ reviewed_geis_lung <- lung_geis_raw %>%
     )
   ) %>% 
   rename(Sex = Gender) %>% 
-  relocate(site, cancer_type)
+  relocate(
+    site, cancer_type
+  )
 
 reviewed_geis_colon <- colon_geis_raw %>% 
   rename(
@@ -116,6 +118,23 @@ reviewed_geis_colon <- colon_geis_raw %>%
     signal_present, cancer_dx_considered, MOD_present_main_outcome,
     signal_date, dx_eval_init_date, dx_eval_complete_date
   )
+
+reviewed_va_lung_colon <- lung_va_raw %>% 
+  bind_rows(colon_va_raw) %>% 
+  mutate(
+    signal_present = as.factor(RFYesNo),
+    cancer_dx_considered = as.factor(RFInitialCancerDxConsidered),
+    MOD_present_main_outcome = as.factor(DxMOD),
+    signal_date = as.Date(RFInitialOccDateTime),
+    dx_eval_init_date = as.Date(RFInitialFUReqDateTime),
+    dx_eval_complete_date = as.Date(RFInitialFUCompDateTime),
+    signal_type = as.factor(RFInitialRF)
+  ) %>% 
+  relocate(
+    site, cancer_type,  # Age, Sex, Race, Location,
+    signal_present, cancer_dx_considered, MOD_present_main_outcome,
+    signal_date, dx_eval_init_date, dx_eval_complete_date, signal_type
+  )
 ```
 
 # Intro
@@ -134,6 +153,10 @@ List of vars that I actually analyze:
 - `signal_date`
 - `dx_eval_init_date`
 - `dx_eval_complete_date`
+
+## Vars to consider tidying
+
+- type of red flag: `RFInitialRF` in VA
 
 ## Which files/datasets to tidy
 
