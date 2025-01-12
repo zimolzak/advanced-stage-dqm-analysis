@@ -182,12 +182,14 @@ List of vars that I actually analyze:
 
 ## Dataset checklist
 
-- [x] `lung_raw`
-- [x] `colon_raw` (both VA comprehensive)
-- [x] `reviewed_geis_lung` (Geisinger chart review)
-- [x] `colon_geis_raw`
-- [x] `lung_va_raw`
-- [x] `colon_va_raw`
+- Comprehensive
+    - [x] `lung_raw`
+    - [x] `colon_raw` (both VA comprehensive)
+- Chart reviews
+    - [x] `reviewed_geis_lung` (Geisinger chart review)
+    - [x] `colon_geis_raw`
+    - [x] `lung_va_raw`
+    - [x] `colon_va_raw`
 
 
 
@@ -257,7 +259,7 @@ chi_colon_race
 p_colon_race <- chi_colon_race$p.value
 ```
 
-```{r plot-colon-age}
+```{r plot-colon-age, message=FALSE, warning=FALSE}
 ggplot(
   data = colon,
   aes(
@@ -310,7 +312,7 @@ chi_lung_race
 p_lung_race <- chi_lung_race$p.value
 ```
 
-```{r plot-lung-age}
+```{r plot-lung-age, message=FALSE, warning=FALSE}
 ggplot(
   data = lung,
   aes(
@@ -391,7 +393,7 @@ assoc %>%
 
 ## Age distributions, by cancer and advanced-stage status
 
-```{r age-assoc}
+```{r age-assoc, message=FALSE}
 q123 <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
   median = ~quantile(.x, 0.5, na.rm = TRUE),
@@ -435,15 +437,13 @@ FIXME - probably widen this out with column names like `Colon_VA`.
 
 
 
-# Geisinger
-
-## Chart review descriptives
+# Descriptives: chart review 
 
 Purely descriptive stats of the following:
 
 - MOD (percent)
 - sex (%)
-- Cancer signal preceiding, %
+- Cancer signal preceding, %
 - Cancer considered, %
 - signal to workup init, histogram and quartiles
 - init to complete time, histogram and quartiles
@@ -493,7 +493,10 @@ rbind(
   kable()
 ```
 
-```{r geis-temporal}
+```{r geis-temporal, message=FALSE, warning=TRUE}
+
+# Leave warning=TRUE for now. I want to know about "removed non-finite," etc.
+
 temporal <- reviewed_geis_lung %>% 
   mutate(
     sig_to_init = as.numeric(dx_eval_init_date - signal_date),
@@ -520,9 +523,12 @@ temporal %>%
   kable()
 ```
 
-## Associations
 
-```{r geis-temporal-assoc}
+
+
+# Associations: chart review
+
+```{r geis-temporal-assoc, message=FALSE, warning=TRUE}
 ggplot(data = temporal, aes(sig_to_init)) +
   geom_histogram() +
   facet_grid(rows="Sex")
@@ -541,19 +547,31 @@ temporal %>%
   unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
   mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
   kable()
+```
 
+## Initiation time vs. gender.
+
+```{r wilc-t1}
 wilc_s2i_gender <- wilcox.test(
   temporal %>% filter(Sex == "M") %>% pull(sig_to_init),
   temporal %>% filter(Sex == "F") %>% pull(sig_to_init)
 )
 wilc_s2i_gender
+```
 
+## Completion time vs. gender.
+
+```{r wilc-t2}
 wilc_i2c_gender <- wilcox.test(
   temporal %>% filter(Sex == "M") %>% pull(init_to_complete),
   temporal %>% filter(Sex == "F") %>% pull(init_to_complete)
 )
 wilc_i2c_gender
+```
 
+## Times vs. age, *etc.*
+
+```{r many-plots}
 ggplot(temporal, aes(x=Age, y=sig_to_init)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10()
