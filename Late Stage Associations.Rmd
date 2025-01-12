@@ -14,8 +14,10 @@ library(ggplot2)
 library(knitr)
 library(tidyr)
 library(Hmisc)
+# coming next: forcats
+# consider later: clean_names() from {janitor} 
 
-knitr::opts_chunk$set(echo = FALSE)  # Set default to "Run but don't show code."
+knitr::opts_chunk$set(echo = FALSE)  # Sets the default to "Run but don't show code."
 ```
 
 ```{r read, include=FALSE}
@@ -504,6 +506,11 @@ temporal <- reviewed_geis_lung %>%
     sig_to_init = as.numeric(dx_eval_init_date - signal_date),
     init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
   )
+
+label(temporal$sig_to_init) <- "Time from cancer signal to workup initiation"
+units(temporal$sig_to_init) <- "Day"
+
+# FIXME - Can't figure out how to use these labels nicely in ggplot.
 
 ggplot(temporal, aes(x=sig_to_init)) +
   geom_histogram()
