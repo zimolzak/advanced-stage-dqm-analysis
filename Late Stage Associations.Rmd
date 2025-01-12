@@ -264,11 +264,14 @@ all_data %>%
 
 
 
+# TK - INSERT MORE DESCRIPTIVES HERE
+
+
 
 
 # Associations: hypoth. tests and bivar. plots (comprehensive data)
 
-## Colon
+## Colon stage/age plot
 
 ```{r test-colon-sex, include=FALSE}
 tab_colon_sex <- table(colon$Sex, colon$Stage)
@@ -318,10 +321,7 @@ wilc_colon_age
 p_colon_age <- wilc_colon_age$p.value
 ```
 
-
-
-
-## Lung
+## Lung stage/age plot
 
 ```{r test-lung-sex, include=FALSE}
 tab_lung_sex <- table(lung$Sex, lung$Stage)
@@ -376,12 +376,7 @@ t.test(
 )
 ```
 
-
-
-
-# Association tables
-
-## Advanced stage percentages, by demographics
+## Table: Advanced stage percentages, by demographics
 
 ```{r categorical-assoc}
 assoc_r <- all_data %>%
@@ -422,7 +417,7 @@ assoc %>%
   kable()
 ```
 
-## Age distributions, by cancer and advanced-stage status
+## Table: Age, by cancer type and advanced-stage status
 
 ```{r age-assoc, message=FALSE}
 q123 <- list(
@@ -591,7 +586,7 @@ temporal %>%
 
 # Associations: chart review
 
-## Initiation time vs. gender
+## Initiation time vs. gender plot
 
 ```{r init-gender, message=FALSE, warning=TRUE}
 ggplot(data = temporal, aes(sig_to_init)) +
@@ -608,7 +603,7 @@ p_init_gender <- wilc_s2i_gender$p.value
 
 \newpage
 
-## Completion time vs. gender
+## Completion time vs. gender plot
 
 ```{r completion-gender}
 ggplot(data = temporal, aes(init_to_complete)) +
@@ -622,6 +617,8 @@ wilc_i2c_gender <- wilcox.test(
 wilc_i2c_gender
 p_completion_gender <- wilc_i2c_gender$p.value
 ```
+
+## Table: Time intervals vs. gender
 
 ```{r time-gender-table}
 pval_row <- tribble(
@@ -644,12 +641,7 @@ temporal %>%
 
 \newpage
 
-
-
-
-# Associations: continuous
-
-## Initiation time vs. age
+## Initiation time vs. age plot
 
 ```{r helper-fns}
 p <- function(spear){
@@ -677,7 +669,7 @@ ggplot(temporal, aes(x=Age, y=sig_to_init)) +
 
 \newpage
 
-## Completion time vs. age (several plots)
+## Completion time vs. age (multiple plots)
 
 ```{r ca}
 sp_ca <- cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat significant
@@ -710,7 +702,8 @@ ggplot(temporal, aes(x=Age, y=init_to_complete)) +
 
 \newpage
 
-## Initiation time vs. completion time (probably too wacky)
+## Initiation time vs. completion time (plots are too wacky)
+
 ```{r ic}
 sp_ic <- cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat significant
 ```
