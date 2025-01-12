@@ -493,6 +493,8 @@ rbind(
   kable()
 ```
 
+## Cancer signal to workup initiation
+
 ```{r geis-temporal, message=FALSE, warning=TRUE}
 
 # Leave warning=TRUE for now. I want to know about "removed non-finite," etc.
@@ -505,13 +507,27 @@ temporal <- reviewed_geis_lung %>%
 
 ggplot(temporal, aes(x=sig_to_init)) +
   geom_histogram()
+```
 
+\newpage
+
+## Workup initiation to completion
+
+```{r}
 ggplot(temporal, aes(x=init_to_complete)) +
   geom_histogram()
+```
 
+## Age
+
+```{r message=FALSE}
 ggplot(temporal, aes(x=Age)) +
   geom_histogram()
+```
 
+## Table of quartiles (temporal variables)
+
+```{r}
 temporal %>% 
   summarise(across(sig_to_init:init_to_complete, q123)) %>% 
   select(!contains(c("mean", "sd"))) %>% 
@@ -523,6 +539,8 @@ temporal %>%
   kable()
 ```
 
+\newpage
+
 
 
 
@@ -530,18 +548,7 @@ temporal %>%
 
 ## Initiation time vs. gender
 
-```{r geis-temporal-assoc, message=FALSE, warning=TRUE}
-temporal %>% 
-  group_by(Sex) %>% 
-  summarise(across(sig_to_init:init_to_complete, q123)) %>% 
-  select(!contains(c("mean", "sd"))) %>% 
-  unite(sig_to_init_median, sig_to_init_q1, col="sig_to_init", sep=" (") %>% 
-  unite(sig_to_init, sig_to_init_q3, col="sig_to_init", sep=" - ") %>% 
-  unite(init_to_complete_median, init_to_complete_q1, col="init_to_complete", sep=" (") %>% 
-  unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
-  mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
-  kable()
-
+```{r init-gender, message=FALSE, warning=TRUE}
 ggplot(data = temporal, aes(sig_to_init)) +
   geom_histogram() +
   facet_grid(rows="Sex")
@@ -551,11 +558,14 @@ wilc_s2i_gender <- wilcox.test(
   temporal %>% filter(Sex == "F") %>% pull(sig_to_init)
 )
 wilc_s2i_gender
+p_init_gender <- wilc_s2i_gender$p.value
 ```
+
+\newpage
 
 ## Completion time vs. gender
 
-```{r wilc-t2}
+```{r completion-gender}
 ggplot(data = temporal, aes(init_to_complete)) +
   geom_histogram() +
   facet_grid(rows="Sex")
@@ -565,25 +575,74 @@ wilc_i2c_gender <- wilcox.test(
   temporal %>% filter(Sex == "F") %>% pull(init_to_complete)
 )
 wilc_i2c_gender
+p_completion_gender <- wilc_i2c_gender$p.value
+```
+
+```{r time-gender-table}
+pval_row <- tribble(
+  ~Sex, ~sig_to_init, ~init_to_complete,
+  "P value", as.character(round(p_init_gender, 3)), as.character(round(p_completion_gender, 3))
+)
+
+temporal %>% 
+  group_by(Sex) %>% 
+  summarise(across(sig_to_init:init_to_complete, q123)) %>% 
+  select(!contains(c("mean", "sd"))) %>% 
+  unite(sig_to_init_median, sig_to_init_q1, col="sig_to_init", sep=" (") %>% 
+  unite(sig_to_init, sig_to_init_q3, col="sig_to_init", sep=" - ") %>% 
+  unite(init_to_complete_median, init_to_complete_q1, col="init_to_complete", sep=" (") %>% 
+  unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
+  mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
+  bind_rows(pval_row) %>% 
+  kable()
 ```
 
 \newpage
+
+
+
+
+# Associations: continuous
 
 ## Initiation time vs. age
 
-```{r init-vs-age}
+```{r helper-fns}
+p <- function(spear){
+  return(round(spear$p.value, 3))
+}
+
+r <- function(spear){
+  return(round(spear$estimate, 3))
+}
+```
+
+```{r ia}
+sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
+```
+
+$P = `r p(sp_ia)`$
+
+$\rho = `r r(sp_ia)`$
+
+```{r init-vs-age-plot}
 ggplot(temporal, aes(x=Age, y=sig_to_init)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10()
-
-cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
 ```
 
 \newpage
 
-## Completion time vs. age (2 plots)
+## Completion time vs. age (several plots)
 
-```{r}
+```{r ca}
+sp_ca <- cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat significant
+```
+
+$P = `r p(sp_ca)`$
+
+$\rho = `r r(sp_ca)`$
+
+```{r completion-age-plot}
 ggplot(temporal, aes(x=Age, y=init_to_complete)) +
   geom_jitter(alpha=0.5) +
   xlim(40, 90) +
@@ -591,15 +650,20 @@ ggplot(temporal, aes(x=Age, y=init_to_complete)) +
 ggplot(temporal, aes(x=Age, y=init_to_complete)) +
   geom_bin_2d(bins=10) +
   xlim(40,90)
-
-cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat significant
 ```
 
 \newpage
 
 ## Initiation time vs. completion time (probably too wacky)
+```{r ic}
+sp_ic <- cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat significant
+```
 
-```{r}
+$P = `r p(sp_ic)`$
+
+$\rho = `r r(sp_ic)`$
+
+```{r init-completion-plot}
 ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10() + scale_x_log10()
@@ -609,6 +673,4 @@ ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
 ggplot(temporal, aes(x=sig_to_init + 0.1, y=init_to_complete + 0.1)) +
   geom_density_2d() + geom_jitter(alpha=0.5) +
   scale_y_log10() + scale_x_log10()
-
-cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat significant
 ```
