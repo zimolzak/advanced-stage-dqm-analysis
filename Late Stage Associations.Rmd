@@ -71,7 +71,8 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
   rename(
     StageGroupNumeric = StageOfCancer,
     Age = PatientAgeCapped
-  )
+  ) %>% 
+  relocate(site, cancer_type, Sex, Race, Age, Stage)
 
 colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
@@ -246,6 +247,26 @@ percentage_text <- function(numerator, denominator) {
 }
 ```
 
+## VA sex, age, race
+
+```{r va-demographics}
+all_data %>%
+  group_by(site, cancer_type) %>% 
+  count(Sex) %>% 
+  mutate(d = sum(n)) %>% 
+  mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
+  filter(Sex == "M") %>% 
+  kable()
+
+all_data %>%
+  group_by(site, cancer_type) %>% 
+  count(Race) %>% 
+  mutate(d = sum(n)) %>% 
+  arrange(desc(cancer_type), desc(n)) %>% 
+  mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
+  kable()
+```
+
 ## Table of advanced-stage percentages
 
 ```{r measure-distribution}
@@ -253,12 +274,12 @@ rbind(
   all_data %>% 
     group_by(site, cancer_type) %>% 
     count() %>%
-    mutate(Stage = "Total"),
+    mutate(Stage = "Total"),  # denominator, basically
   all_data %>% 
     group_by(site, cancer_type) %>% 
-    count(Stage)
+    count(Stage)  # numerators Advanced & Early
 ) %>%
-  filter(Stage != "Early") %>% 
+  filter(Stage != "Early") %>%  # just 1 numerator
   bind_rows(geisinger_comprehensive) %>% 
   arrange(desc(site), desc(cancer_type), Stage) %>% 
   pivot_wider(names_from = c(site, cancer_type, Stage), values_from = n) %>% 
