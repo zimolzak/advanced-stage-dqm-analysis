@@ -208,6 +208,28 @@ List of vars that I actually analyze:
     - [x] `lung_va_raw`
     - [x] `colon_va_raw`
 
+## To Do (reviewers)
+
+- Descriptive stats (large scale)
+    - flow diagram (R1 C1)
+        - [x] specifically about PCP visit
+    - [ ] missingness R1 C1. Specifically of stage.
+    - [x] demographics (by health sys)
+- Manual review stats
+    - description of temporal distribution
+        - [ ] Ed: bin them with breaks at like 3, 6, 12 months.
+    - temporal vs demographic (assoc)
+    - temporal vs MOD (assoc)
+    - really which reviewer wants assoc stats?
+    - [x] CIs for percent of MOD (descriptive)
+- [x] Geisinger data
+
+## Might not have
+
+- Geisinger full data (pcp)
+- Geisinger non-late-stage
+- VA $n = 100$ sample demographics
+
 
 
 
@@ -558,31 +580,6 @@ all_data %>%
 ```
 
 FIXME - probably widen this out with column names like `Colon_VA`.
-
-
-
-
-# To Do (reviewers)
-
-- Descriptive stats (large scale)
-    - flow diagram (R1 C1)
-        - [x] specifically about PCP visit
-    - [ ] missingness R1 C1. Specifically of stage.
-    - [x] demographics (by health sys)
-- Manual review stats
-    - description of temporal distribution
-        - [ ] Ed: bin them with breaks at like 3, 6, 12 months.
-    - temporal vs demographic (assoc)
-    - temporal vs MOD (assoc)
-    - really which reviewer wants assoc stats?
-    - [x] CIs for percent of MOD (descriptive)
-- [x] Geisinger data
-
-## Might not have
-
-- Geisinger full data (pcp)
-- Geisinger non-late-stage
-- VA $n = 100$ sample demographics
 
 
 
