@@ -20,6 +20,17 @@ library(forcats)
 knitr::opts_chunk$set(echo = FALSE)  # Sets the default to "Run but don't show code."
 ```
 
+```{r version, echo=TRUE}
+R.version.string
+
+rstudioapi::versionInfo()$version
+
+si <- sessionInfo()
+for (i in 1:length(si$otherPkgs)) {
+  cat(si$otherPkgs[[i]]$Package, si$otherPkgs[[i]]$Version, "\n")
+}
+```
+
 ```{r read, include=FALSE}
 
 # Column setup
@@ -457,7 +468,7 @@ temporal %>%
 
 ## Colon stage/age plot
 
-```{r test-colon-sex, include=FALSE}
+```{r test-colon-sex, echo=TRUE}
 tab_colon_sex <- table(colon$Sex, colon$Stage)
 
 fisher.test(tab_colon_sex)
@@ -495,7 +506,7 @@ ggplot(data = colon, aes(Age)) +
   xlim(20, 100)
 ```
 
-```{r test-colon-age, include=FALSE}
+```{r test-colon-age, echo=TRUE}
 wilc_colon_age <- wilcox.test(
   colon %>% filter(Stage == "Advanced") %>% pull(Age),
   colon %>% filter(Stage == "Early") %>% pull(Age)
