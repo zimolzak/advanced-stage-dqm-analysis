@@ -784,7 +784,7 @@ p(gv)
 r(g)
 r(gv)
 
-temporal_gv %>% filter(site == "Geisinger", is.na(sig_to_init)) %>% select(cancer_type, signal_date, dx_eval_init_date, MOD_definite, signal_present) %>% View()
+temporal_gv %>% filter(site == "Geisinger", is.na(sig_to_init)) %>% select(cancer_type, signal_date, dx_eval_init_date, MOD_definite, signal_present) %>% summary()
 
 # FIXME - something weird about how cor.test handles NAs.
 
