@@ -424,7 +424,11 @@ reviewed_all %>%
     cols = starts_with(c("Age", "signal", "init")),
     names_to = c("variable", "statistic"),
     names_pattern = "(.*)_(.*)"
-  )
+  ) %>% 
+  pivot_wider(names_from = statistic, values_from = value) %>% 
+  # mutate(across(c(q1, median, q3, mean, sd), ~ round(.x, 1))) %>% 
+  arrange(desc(site), desc(cancer_type)) %>% 
+  kable()
 ```
 
 
