@@ -791,6 +791,9 @@ temporal_gv %>% filter(site == "Geisinger", is.na(sig_to_init)) %>% select(cance
 ```
 
 
+**Note to self!** Maybe (probably) I need to select only for those with red flag `= TRUE`.
+
+
 
 \newpage
 
