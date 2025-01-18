@@ -417,6 +417,31 @@ bind_rows(
 \newpage
 
 ```{r descriptives-continuous-strat}
+median_text_scalar <- function(m, q1, q3){
+  vec <- c(
+    as.character(round(m, 1)),
+    " (",
+    as.character(round(q1, 1)),
+    " - ",
+    as.character(round(q3, 1)),
+    ")"
+  )
+  return(paste0(vec, collapse = ""))
+}
+
+mean_text_scalar <- function(m, s){
+  vec <- c(
+    as.character(round(m, 1)),
+    " (",
+    as.character(round(s, 1)),
+    ")"
+  )
+  return(paste0(vec, collapse = ""))
+}
+
+median_text <- Vectorize(median_text_scalar)
+mean_text <- Vectorize(mean_text_scalar)
+
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
   summarise(across(c(Age, signal_to_init, init_to_completion), q123)) %>% 
@@ -427,8 +452,21 @@ reviewed_all %>%
   ) %>% 
   pivot_wider(names_from = statistic, values_from = value) %>% 
   # mutate(across(c(q1, median, q3, mean, sd), ~ round(.x, 1))) %>% 
+  mutate(
+    median_q1_q3 = median_text(median, q1, q3),
+    mean_sd = mean_text(mean, sd),
+    .keep = "unused"
+  ) %>% 
   arrange(desc(site), desc(cancer_type)) %>% 
   kable()
+```
+
+## Plots for all sites/cancers
+
+```{r descrip-facet}
+ggplot(reviewed_all, aes(x=Age)) +
+  geom_histogram(binwidth = 2) +
+  facet_grid(vars(site, cancer_type))
 ```
 
 
