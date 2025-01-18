@@ -416,7 +416,10 @@ bind_rows(
 
 \newpage
 
-```{r descriptives-continuous-strat}
+
+
+
+```{r descriptives-continuous-strat, message=FALSE}
 median_text_scalar <- function(m, q1, q3){
   vec <- c(
     as.character(round(m, 1)),
@@ -463,62 +466,23 @@ reviewed_all %>%
 
 ## Plots for all sites/cancers
 
-```{r descrip-facet}
+```{r descrip-facet-age, warning=FALSE}
 ggplot(reviewed_all, aes(x=Age)) +
   geom_histogram(binwidth = 2) +
   facet_grid(vars(site, cancer_type))
 ```
 
-
-## ONLY GEISINGER! Cancer signal to workup initiation
-
-```{r geis-temporal, message=FALSE, warning=TRUE}
-
-# Leave warning=TRUE for now. I want to know about "removed non-finite," etc.
-
-temporal <- reviewed_geis_lung %>% 
-  mutate(
-    sig_to_init = as.numeric(dx_eval_init_date - signal_date),
-    init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
-  )
-
-label(temporal$sig_to_init) <- "Time from cancer signal to workup initiation"
-units(temporal$sig_to_init) <- "Day"
-
-# FIXME - Can't figure out how to use these labels nicely in ggplot.
-
-ggplot(temporal, aes(x=sig_to_init)) +
-  geom_histogram()
+```{r descrip-facet-s2i, warning=FALSE}
+ggplot(reviewed_all, aes(x=signal_to_init)) +
+  geom_histogram(bins=30) +
+  facet_grid(vars(site, cancer_type))
 ```
 
-\newpage
 
-## ONLY GEISINGER! Workup initiation to completion
-
-```{r i2c-descr, message=FALSE}
-ggplot(temporal, aes(x=init_to_complete)) +
-  geom_histogram()
-```
-
-## ONLY GEISINGER! Age
-
-```{r age-descr, message=FALSE}
-ggplot(temporal, aes(x=Age)) +
-  geom_histogram()
-```
-
-## ONLY GEISINGER! Table of quartiles (temporal variables)
-
-```{r temporal-descr}
-temporal %>% 
-  summarise(across(sig_to_init:init_to_complete, q123)) %>% 
-  select(!contains(c("mean", "sd"))) %>% 
-  unite(sig_to_init_median, sig_to_init_q1, col="sig_to_init", sep=" (") %>% 
-  unite(sig_to_init, sig_to_init_q3, col="sig_to_init", sep=" - ") %>% 
-  unite(init_to_complete_median, init_to_complete_q1, col="init_to_complete", sep=" (") %>% 
-  unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
-  mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
-  kable()
+```{r descrip-facet-i2c, warning=FALSE}
+ggplot(reviewed_all, aes(x=init_to_completion)) +
+  geom_histogram(bins=30) +
+  facet_grid(vars(site, cancer_type))
 ```
 
 \newpage
