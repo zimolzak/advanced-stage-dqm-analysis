@@ -247,7 +247,7 @@ List of vars that I actually analyze:
 
 # Descriptives: comprehensive data
 
-```{r function-percentage}
+```{r definitions}
 percentage_text <- function(numerator, denominator) {
   # It appears to be already vectorized.
   ntext <- as.character(numerator)
@@ -256,6 +256,14 @@ percentage_text <- function(numerator, denominator) {
   final_text <- paste0(ntext, " / ", dtext, " (", ptext, "%)")
   return(final_text)
 }
+
+q123 <- list(
+  q1 = ~quantile(.x, 0.25, na.rm = TRUE),
+  median = ~quantile(.x, 0.5, na.rm = TRUE),
+  q3 = ~quantile(.x, 0.75, na.rm = TRUE),
+  mean = ~round(mean(.x, na.rm=TRUE), 2),
+  sd = ~round(sd(.x, na.rm = TRUE), 2)
+)
 ```
 
 ## VA sex, age, race
@@ -275,6 +283,14 @@ all_data %>%
   mutate(d = sum(n)) %>% 
   arrange(desc(cancer_type), desc(n)) %>% 
   mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
+  kable()
+
+all_data %>% 
+  ggplot(aes(x=Age)) +
+  geom_histogram(binwidth = 2)
+
+all_data %>% 
+  summarise(across(Age, q123)) %>% 
   kable()
 ```
 
@@ -436,16 +452,6 @@ ggplot(temporal, aes(x=Age)) +
 ```
 
 ## Table of quartiles (temporal variables)
-
-```{r define-q123}
-q123 <- list(
-  q1 = ~quantile(.x, 0.25, na.rm = TRUE),
-  median = ~quantile(.x, 0.5, na.rm = TRUE),
-  q3 = ~quantile(.x, 0.75, na.rm = TRUE),
-  mean = ~round(mean(.x, na.rm=TRUE), 2),
-  sd = ~round(sd(.x, na.rm = TRUE), 2)
-)
-```
 
 ```{r temporal-descr}
 temporal %>% 
