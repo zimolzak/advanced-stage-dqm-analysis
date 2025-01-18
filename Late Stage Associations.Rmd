@@ -655,22 +655,22 @@ all_data %>%
   kable()
 ```
 
-
-
-
-# ONLY GEISINGER! Associations: chart review
+# Associations: chart review. WARNING, merged lung and colon
 
 ## Initiation time vs. gender plot
 
-```{r init-gender, message=FALSE, warning=TRUE}
-ggplot(data = temporal, aes(sig_to_init)) +
+```{r init-gender, message=FALSE, warning=FALSE}
+reviewed_all %>% 
+  filter(!is.na(Sex)) %>% 
+  ggplot(aes(signal_to_init)) +
   geom_histogram() +
-  facet_grid(rows="Sex")
+  facet_grid(rows=vars(Sex), cols = vars(site, cancer_type))
 
 wilc_s2i_gender <- wilcox.test(
-  temporal %>% filter(Sex == "M") %>% pull(sig_to_init),
-  temporal %>% filter(Sex == "F") %>% pull(sig_to_init)
+  reviewed_all %>% filter(Sex == "M") %>% pull(signal_to_init),
+  reviewed_all %>% filter(Sex == "F") %>% pull(signal_to_init)
 )
+# FIXME - This merges lung & colon.
 wilc_s2i_gender
 p_init_gender <- wilc_s2i_gender$p.value
 ```
@@ -679,14 +679,16 @@ p_init_gender <- wilc_s2i_gender$p.value
 
 ## Completion time vs. gender plot
 
-```{r completion-gender}
-ggplot(data = temporal, aes(init_to_complete)) +
+```{r completion-gender, message=FALSE, warning=FALSE}
+reviewed_all %>% 
+  filter(!is.na(Sex)) %>% 
+  ggplot(aes(init_to_completion)) +
   geom_histogram() +
-  facet_grid(rows="Sex")
+  facet_grid(rows=vars(Sex), cols = vars(site, cancer_type))
 
 wilc_i2c_gender <- wilcox.test(
-  temporal %>% filter(Sex == "M") %>% pull(init_to_complete),
-  temporal %>% filter(Sex == "F") %>% pull(init_to_complete)
+  reviewed_all %>% filter(Sex == "M") %>% pull(init_to_completion),
+  reviewed_all %>% filter(Sex == "F") %>% pull(init_to_completion)
 )
 wilc_i2c_gender
 p_completion_gender <- wilc_i2c_gender$p.value
@@ -696,24 +698,30 @@ p_completion_gender <- wilc_i2c_gender$p.value
 
 ```{r time-gender-table}
 pval_row <- tribble(
-  ~Sex, ~sig_to_init, ~init_to_complete,
+  ~Sex, ~signal_to_init, ~init_to_completion,
   "P value", as.character(round(p_init_gender, 3)), as.character(round(p_completion_gender, 3))
 )
 
-temporal %>% 
+reviewed_all %>% 
+  # filter(!is.na(Sex)) %>%   # Don't filter for now, so we see when NAs are present.
   group_by(Sex) %>% 
-  summarise(across(sig_to_init:init_to_complete, q123)) %>% 
+  summarise(across(signal_to_init:init_to_completion, q123)) %>% 
   select(!contains(c("mean", "sd"))) %>% 
-  unite(sig_to_init_median, sig_to_init_q1, col="sig_to_init", sep=" (") %>% 
-  unite(sig_to_init, sig_to_init_q3, col="sig_to_init", sep=" - ") %>% 
-  unite(init_to_complete_median, init_to_complete_q1, col="init_to_complete", sep=" (") %>% 
-  unite(init_to_complete, init_to_complete_q3, col="init_to_complete", sep=" - ") %>% 
+  unite(signal_to_init_median, signal_to_init_q1, col="signal_to_init", sep=" (") %>% 
+  unite(signal_to_init, signal_to_init_q3, col="signal_to_init", sep=" - ") %>% 
+  unite(init_to_completion_median, init_to_completion_q1, col="init_to_completion", sep=" (") %>% 
+  unite(init_to_completion, init_to_completion_q3, col="init_to_completion", sep=" - ") %>% 
   mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
   bind_rows(pval_row) %>% 
   kable()
 ```
 
 \newpage
+
+
+
+
+# OLD DATA FRAME `temporal`
 
 ## Initiation time vs. age plot
 
