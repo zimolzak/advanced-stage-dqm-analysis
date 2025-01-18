@@ -735,6 +735,29 @@ r <- function(spear){
 }
 ```
 
+```{r define-temporal}
+temporal <- reviewed_geis_lung %>% 
+
+ 
+  mutate(
+
+ 
+    sig_to_init = as.numeric(dx_eval_init_date - signal_date),
+
+ 
+    init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
+
+ 
+  )
+
+temporal_gv <- reviewed_all %>% 
+  mutate(
+    sig_to_init = as.numeric(dx_eval_init_date - signal_date),
+    init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
+  )
+```
+
+
 ```{r ia}
 sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
 ```
@@ -748,6 +771,26 @@ ggplot(temporal, aes(x=Age, y=sig_to_init)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10()
 ```
+
+### Sanity check
+
+These should be the same:
+
+```{r sanity}
+g  <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
+gv <- cor.test(temporal_gv$Age, temporal_gv$sig_to_init, method = "spearman")
+p(g)
+p(gv)
+r(g)
+r(gv)
+
+temporal_gv %>% filter(site == "Geisinger", is.na(sig_to_init)) %>% select(cancer_type, signal_date, dx_eval_init_date, MOD_definite, signal_present) %>% View()
+
+# FIXME - something weird about how cor.test handles NAs.
+
+```
+
+
 
 \newpage
 
