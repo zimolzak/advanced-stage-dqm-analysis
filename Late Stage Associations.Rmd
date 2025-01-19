@@ -222,6 +222,7 @@ List of vars that I actually analyze:
     - [x] `lung_va_raw`
     - [x] `colon_va_raw`
     - [ ] ***VA date data!*** (re-export?)
+    - [ ] Oh dear, what if "date of completion" varies by reviewer.
 
 ## To Do (reviewers)
 
@@ -812,13 +813,37 @@ I suspect there are entry errors in year here.
 
 ### Non-NA `cor.test`
 
+(Starting with correlation of `Age` and `sig_to_init`, like we did under "Sanity Check," above.)
+
 ```{r non-na-spearman}
 t_all <- temporal_gv %>%
   filter(signal_present=="Yes", !is.na(sig_to_init)) %>%
   select(cancer_type, site, Age, sig_to_init, init_to_complete)
 
-# FIXME cor.test(t_all$sig_to_init)
+
+
+cor.test(t_all$sig_to_init, t_all$init_to_complete)
 ```
+```{r wacky-time-plot}
+t_all %>% 
+  filter(cancer_type == "Lung") %>% 
+  arrange(sig_to_init) %>% 
+  mutate(
+    sig_to_complete = sig_to_init + init_to_complete,
+    patient_id = row_number()
+  ) %>% 
+  pivot_longer(
+    cols = c("sig_to_init", "sig_to_complete"),
+    names_to = "interval_type",
+    names_prefix = "sig_to_"
+  ) %>% 
+  ggplot(aes(x = value, y = patient_id)) +
+  geom_point(aes(colour = factor(interval_type)))
+
+
+```
+
+leftoff
 
 
 \newpage
