@@ -174,11 +174,15 @@ reviewed_all <- bind_rows(
   select(
     site, cancer_type, Age, Sex, Race, Location,
     signal_present, cancer_dx_considered, MOD_definite,
-    signal_date, dx_eval_init_date, dx_eval_complete_date
+    signal_date, dx_eval_init_date, dx_eval_complete_date,
+    Reviewer
   ) %>% 
   mutate(
     across(c(site, cancer_type), as.factor),
     Sex = fct_collapse(Sex, M = "MALE", F = "FEMALE"),
+    
+    # NOTE the different naming "signal" vs "sig", and "completion" vs "complete"
+    
     signal_to_init = as.numeric(dx_eval_init_date - signal_date),
     init_to_completion = as.numeric(dx_eval_complete_date - dx_eval_init_date)
   )
@@ -211,7 +215,7 @@ List of vars that I actually analyze:
 - `dx_eval_complete_date`
 - `signal_type`: tidied but not (yet) used
 
-## Dataset checklist
+## To do (my list: data and analyses)
 
 - Comprehensive
     - [x] `lung_raw`
@@ -221,10 +225,12 @@ List of vars that I actually analyze:
     - [x] `colon_geis_raw`
     - [x] `lung_va_raw`
     - [x] `colon_va_raw`
-    - [ ] ***VA date data!*** (re-export?)
-    - [ ] Oh dear, what if "date of completion" varies by reviewer.
+    - [ ] ***VA date data!*** (re-export?) FIXME
+- Analyses
+    - [x] Oh dear, what if "date of completion" varies by reviewer.
+    - [ ] All the fix comments, related to Spearman's $\rho$ handling `NA` values, and stratifying by site and cancer type.
 
-## To Do (reviewers)
+## To Do (reviewers' list)
 
 - Descriptive stats (large scale)
     - flow diagram (R1 C1)
@@ -301,7 +307,7 @@ all_data %>%
 ## Table of advanced-stage percentages
 
 ```{r measure-distribution}
-rbind(  # FIXME - should we use bind_rows() ?
+rbind(  # FIXME_maybe - should we use bind_rows() ?
   all_data %>% 
     group_by(site, cancer_type) %>% 
     count() %>%
@@ -657,7 +663,9 @@ all_data %>%
   kable()
 ```
 
-# Associations: chart review. WARNING, merged lung and colon
+# Associations: chart review. FIXME: need to stratify lung and colon
+
+Left off here. *leftoff*
 
 ## Initiation time vs. gender plot
 
@@ -672,7 +680,10 @@ wilc_s2i_gender <- wilcox.test(
   reviewed_all %>% filter(Sex == "M") %>% pull(signal_to_init),
   reviewed_all %>% filter(Sex == "F") %>% pull(signal_to_init)
 )
-# FIXME - This merges lung & colon.
+# FIXME - This stat test merges lung & colon.
+# stratify
+# probably filter NA to be safe
+# Plots are okay, though!
 wilc_s2i_gender
 p_init_gender <- wilc_s2i_gender$p.value
 ```
@@ -691,7 +702,9 @@ reviewed_all %>%
 wilc_i2c_gender <- wilcox.test(
   reviewed_all %>% filter(Sex == "M") %>% pull(init_to_completion),
   reviewed_all %>% filter(Sex == "F") %>% pull(init_to_completion)
-)
+) # FIXME
+# stratify
+# filter to be safe
 wilc_i2c_gender
 p_completion_gender <- wilc_i2c_gender$p.value
 ```
@@ -706,8 +719,8 @@ pval_row <- tribble(
 
 reviewed_all %>% 
   # filter(!is.na(Sex)) %>%   # Don't filter for now, so we see when NAs are present.
-  group_by(Sex) %>% 
-  summarise(across(signal_to_init:init_to_completion, q123)) %>% 
+  group_by(site, cancer_type, Sex) %>% 
+  summarise(across(signal_to_init:init_to_completion, q123), n=n()) %>% 
   select(!contains(c("mean", "sd"))) %>% 
   unite(signal_to_init_median, signal_to_init_q1, col="signal_to_init", sep=" (") %>% 
   unite(signal_to_init, signal_to_init_q3, col="signal_to_init", sep=" - ") %>% 
@@ -753,17 +766,27 @@ temporal_gv <- reviewed_all %>%
 
 ```{r ia}
 sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
+# FIXME: 
+# make it use reviewed_all
+# filter NA 
+# stratify
 ```
 
-$P = `r p(sp_ia)`$
+Wrong: $P = `r p(sp_ia)`$
 
-$\rho = `r r(sp_ia)`$
+Wrong: $\rho = `r r(sp_ia)`$
 
 ```{r init-vs-age-plot}
 ggplot(temporal, aes(x=Age, y=sig_to_init)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10()
+# FIXME (reviewed_all, filter, stratify)
 ```
+
+
+
+
+# DIGRESSION: Exploratory analysis
 
 ### Sanity check
 
@@ -779,14 +802,14 @@ r(gv)
 
 temporal_gv %>% filter(site == "Geisinger", is.na(sig_to_init)) %>% select(cancer_type, signal_date, dx_eval_init_date, MOD_definite, signal_present) %>% summary()
 
-# FIXME - something weird about how cor.test handles NAs.
-
 temporal_gv %>% 
   mutate(sina = is.na(sig_to_init), icna = is.na(init_to_complete)) %>% 
   count(site, cancer_type, signal_present, sina, icna) %>% 
   arrange(sina) %>% 
   kable()
 ```
+
+*Lesson:* Something weird about how cor.test handles NAs.
 
 *Lesson:* Basically, there are (only) $n_l = 65$ Geisinger lung and $n_c = 70$ Geisinger colon with "temporality" data. $n = n_l + n_c = 135$. And the following predicates map 1:1 in the crosstabulation:
 
@@ -818,19 +841,43 @@ I suspect there are entry errors in year here.
 ```{r non-na-spearman}
 t_all <- temporal_gv %>%
   filter(signal_present=="Yes", !is.na(sig_to_init)) %>%
-  select(cancer_type, site, Age, sig_to_init, init_to_complete)
+  select(cancer_type, site, Age, sig_to_init, init_to_complete, Reviewer)
 
+cor_ic <- cor.test(t_all$sig_to_init, t_all$init_to_complete, method = "spearman")
+cor_ac <- cor.test(t_all$Age, t_all$init_to_complete, method = "spearman")
+cor_ai <- cor.test(t_all$Age, t_all$sig_to_init, method = "spearman")
 
+cor_ic
+cor_ac
+cor_ai
 
-cor.test(t_all$sig_to_init, t_all$init_to_complete)
+tribble(
+  ~var1, ~var2, ~p.value, ~rho,
+  "sig_to_init", "init_to_complete", cor_ic$p.value, cor_ic$estimate,
+  "Age", "init_to_complete", cor_ac$p.value, cor_ac$estimate,
+  "Age", "sig_to_init", cor_ai$p.value, cor_ai$estimate
+) %>% 
+  mutate(
+    neg_log_p = round(-1 * log10(p.value), 1),
+    across(c(p.value, rho), ~ round(., 3))
+  ) %>% 
+  kable()
+
 ```
+
+
+### Interval plot
+
 ```{r wacky-time-plot}
 t_all %>% 
   filter(cancer_type == "Lung") %>% 
+  # arrange(sig_to_init + init_to_complete) %>% 
   arrange(sig_to_init) %>% 
   mutate(
     sig_to_complete = sig_to_init + init_to_complete,
-    patient_id = row_number()
+    patient_id = row_number(),
+    vmin = sig_to_init,
+    vmax = sig_to_complete
   ) %>% 
   pivot_longer(
     cols = c("sig_to_init", "sig_to_complete"),
@@ -838,27 +885,86 @@ t_all %>%
     names_prefix = "sig_to_"
   ) %>% 
   ggplot(aes(x = value, y = patient_id)) +
-  geom_point(aes(colour = factor(interval_type)))
+  geom_point(aes(shape = factor(interval_type), colour = factor(Reviewer))) +
+  geom_linerange(aes(xmin = vmin, xmax=vmax, color=factor(Reviewer))) +
+  geom_linerange(aes(xmin = 0, xmax=vmin, color=factor(Reviewer)), alpha = 0.2) +
+  scale_x_sqrt()
 
 
 ```
 
-leftoff
 
+### Reviewer bias?
+
+```{r exploratory-reviewer-bias}
+
+
+t_all %>% 
+  pivot_longer(cols = c(sig_to_init, init_to_complete), names_to = "varname") %>% 
+  filter(cancer_type=="Lung") %>% 
+  group_by(Reviewer, varname) %>% 
+  summarise(
+    mean = mean(value),
+    sd = sd(value),
+    median = median(value),
+    q1 = quantile(value, 0.25),
+    q3 = quantile(value, 0.75)
+  ) %>% 
+  arrange(desc(varname)) %>% 
+  kable()
+
+
+r_si <- t_all %>% filter(cancer_type=="Lung",
+                         Reviewer=="MRR") %>% pull(sig_to_init)
+r_ic <- t_all %>% filter(cancer_type=="Lung",
+                         Reviewer=="MRR") %>% pull(init_to_complete)
+s_si <- t_all %>% filter(cancer_type=="Lung",
+                         Reviewer=="SK") %>% pull(sig_to_init)
+s_ic <- t_all %>% filter(cancer_type=="Lung",
+                         Reviewer=="SK") %>% pull(init_to_complete)
+
+
+
+
+t_all %>% 
+  filter(cancer_type=="Lung") %>% 
+  ggplot(aes(init_to_complete, factor(Reviewer))) +
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), color = "#777777") +
+  geom_jitter(width = 0, height=0.25, alpha = 0.4) +
+  scale_x_sqrt()
+
+t_all %>% 
+  filter(cancer_type=="Lung") %>% 
+  ggplot(aes(sig_to_init, factor(Reviewer))) +
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), color = "#777777") +
+  geom_jitter(width = 0, height=0.25, alpha = 0.4) +
+  scale_x_sqrt()
+
+
+
+wilcox.test(r_si, s_si)
+wilcox.test(r_ic, s_ic)
+```
 
 \newpage
+
+
+
+
+# End of digression. FIXME: wrong stats still in this section.
 
 ## Completion time vs. age (multiple plots)
 
 ```{r ca}
 sp_ca <- cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat significant
+# FIXME: same as other cor.test. (reviewed_all, filter, stratify)
 ```
 
 $P = `r p(sp_ca)`$
 
 $\rho = `r r(sp_ca)`$
 
-```{r completion-age-plot}
+```{r completion-age-plots}
 ggplot(temporal, aes(x=Age, y=init_to_complete)) +
   geom_jitter(alpha=0.5) +
   xlim(40, 90) +
@@ -877,6 +983,9 @@ ggplot(temporal, aes(x=Age, y=init_to_complete)) +
   geom_smooth() +
   coord_cartesian(xlim=c(40,90), ylim=c(-10, 120)) +
   scale_y_continuous(breaks = seq(0,6000, 30), minor_breaks = seq(0, 6000, 30/4))
+
+# FIXME (reviewed_all, filter, stratify)
+# yes this applies to these plots.
 ```
 
 \newpage
@@ -885,13 +994,14 @@ ggplot(temporal, aes(x=Age, y=init_to_complete)) +
 
 ```{r ic}
 sp_ic <- cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat significant
+# FIXME (reviewed_all, filter, stratify)
 ```
 
 $P = `r p(sp_ic)`$
 
 $\rho = `r r(sp_ic)`$
 
-```{r init-completion-plot}
+```{r init-completion-wacky-plots}
 ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10() + scale_x_log10()
@@ -907,4 +1017,5 @@ ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
   coord_cartesian( xlim=c(0, 365*2), ylim=c(0,1200))+
   scale_x_continuous(breaks = seq(0,2000,365)) +
   scale_y_continuous(breaks = seq(0,2000,365))
+# FIXME (reviewed_all, filter, stratify)
 ```
