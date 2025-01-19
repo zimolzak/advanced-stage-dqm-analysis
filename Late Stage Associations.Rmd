@@ -5,6 +5,43 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
+# To Do
+
+## My list: data and analyses
+
+- Comprehensive data
+    - [x] `lung_raw`
+    - [x] `colon_raw` (both VA comprehensive)
+- Chart review data
+    - [x] `reviewed_geis_lung` (Geisinger chart review)
+    - [x] `colon_geis_raw`
+    - [x] `lung_va_raw`
+    - [x] `colon_va_raw`
+    - [ ] ***VA date data!*** (re-export?) FIXME
+    - [ ] ...and sex, and age.
+- Analyses
+    - [x] Oh dear, what if "date of completion" varies by reviewer.
+    - [ ] All the fix comments, related to Spearman's $\rho$ handling `NA` values, and stratifying by site and cancer type.
+
+## Reviewers' list
+
+- Descriptive stats (large scale)
+    - flow diagram (R1 C1)
+        - [x] specifically about PCP visit
+    - [x] missingness R1 C1. Specifically of stage.
+    - [x] demographics (by health sys)
+- Manual review stats
+    - description of temporal distribution
+        - [ ] Ed: bin them with breaks at like 3, 6, 12 months.
+    - temporal vs demographic (assoc)
+    - temporal vs MOD (assoc)
+    - really which reviewer wants assoc stats?
+    - [x] CIs for percent of MOD (descriptive)
+- [x] Geisinger data
+
+
+
+
 # Intro
 
 ```{r setup, include=FALSE}
@@ -20,6 +57,8 @@ library(forcats)
 knitr::opts_chunk$set(echo = FALSE)  # Sets the default to "Run but don't show code."
 ```
 
+## Versions
+
 ```{r version, echo=TRUE}
 R.version.string
 
@@ -30,6 +69,11 @@ for (i in 1:length(si$otherPkgs)) {
   cat(si$otherPkgs[[i]]$Package, si$otherPkgs[[i]]$Version, "\n")
 }
 ```
+
+
+
+
+# Import and tidy
 
 ```{r read, include=FALSE}
 
@@ -87,6 +131,11 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
 
 colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
+```
+
+```{r dim-col-comprehensive, echo=TRUE}
+dim(all_data)
+colnames(all_data)
 ```
 
 ```{r tidy-chart-reviews, message=FALSE}
@@ -188,7 +237,12 @@ reviewed_all <- bind_rows(
   )
 ```
 
-## Double-check VA MOD coding/conversion
+```{r dim-col-reviews, echo=TRUE}
+dim(reviewed_all)
+colnames(reviewed_all)
+```
+
+## Double-checking VA MOD coding/conversion
 
 Original character in columns. New Boolean in rows.
 
@@ -215,40 +269,9 @@ List of vars that I actually analyze:
 - `dx_eval_complete_date`
 - `signal_type`: tidied but not (yet) used
 
-## To do (my list: data and analyses)
+Might not have:
 
-- Comprehensive
-    - [x] `lung_raw`
-    - [x] `colon_raw` (both VA comprehensive)
-- Chart reviews
-    - [x] `reviewed_geis_lung` (Geisinger chart review)
-    - [x] `colon_geis_raw`
-    - [x] `lung_va_raw`
-    - [x] `colon_va_raw`
-    - [ ] ***VA date data!*** (re-export?) FIXME
-- Analyses
-    - [x] Oh dear, what if "date of completion" varies by reviewer.
-    - [ ] All the fix comments, related to Spearman's $\rho$ handling `NA` values, and stratifying by site and cancer type.
-
-## To Do (reviewers' list)
-
-- Descriptive stats (large scale)
-    - flow diagram (R1 C1)
-        - [x] specifically about PCP visit
-    - [x] missingness R1 C1. Specifically of stage.
-    - [x] demographics (by health sys)
-- Manual review stats
-    - description of temporal distribution
-        - [ ] Ed: bin them with breaks at like 3, 6, 12 months.
-    - temporal vs demographic (assoc)
-    - temporal vs MOD (assoc)
-    - really which reviewer wants assoc stats?
-    - [x] CIs for percent of MOD (descriptive)
-- [x] Geisinger data
-
-## Might not have
-
-- Geisinger full data (pcp)
+- Geisinger full data (to see about PCP exclusion)
 - Geisinger non-late-stage
 - VA $n = 100$ sample demographics
 
@@ -688,8 +711,6 @@ wilc_s2i_gender
 p_init_gender <- wilc_s2i_gender$p.value
 ```
 
-\newpage
-
 ## Completion time vs. gender plot
 
 ```{r completion-gender, message=FALSE, warning=FALSE}
@@ -834,7 +855,7 @@ temporal_gv %>%
 
 I suspect there are entry errors in year here.
 
-### Non-NA `cor.test`
+### Correct stats: Non-NA `cor.test`
 
 (Starting with correlation of `Age` and `sig_to_init`, like we did under "Sanity Check," above.)
 
