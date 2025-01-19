@@ -221,6 +221,7 @@ List of vars that I actually analyze:
     - [x] `colon_geis_raw`
     - [x] `lung_va_raw`
     - [x] `colon_va_raw`
+    - [ ] ***VA date data!*** (re-export?)
 
 ## To Do (reviewers)
 
@@ -299,7 +300,7 @@ all_data %>%
 ## Table of advanced-stage percentages
 
 ```{r measure-distribution}
-rbind(
+rbind(  # FIXME - should we use bind_rows() ?
   all_data %>% 
     group_by(site, cancer_type) %>% 
     count() %>%
@@ -737,17 +738,9 @@ r <- function(spear){
 
 ```{r define-temporal}
 temporal <- reviewed_geis_lung %>% 
-
- 
   mutate(
-
- 
     sig_to_init = as.numeric(dx_eval_init_date - signal_date),
-
- 
     init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
-
- 
   )
 
 temporal_gv <- reviewed_all %>% 
@@ -756,7 +749,6 @@ temporal_gv <- reviewed_all %>%
     init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
   )
 ```
-
 
 ```{r ia}
 sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
@@ -788,11 +780,45 @@ temporal_gv %>% filter(site == "Geisinger", is.na(sig_to_init)) %>% select(cance
 
 # FIXME - something weird about how cor.test handles NAs.
 
+temporal_gv %>% 
+  mutate(sina = is.na(sig_to_init), icna = is.na(init_to_complete)) %>% 
+  count(site, cancer_type, signal_present, sina, icna) %>% 
+  arrange(sina) %>% 
+  kable()
 ```
 
+*Lesson:* Basically, there are (only) $n_l = 65$ Geisinger lung and $n_c = 70$ Geisinger colon with "temporality" data. $n = n_l + n_c = 135$. And the following predicates map 1:1 in the crosstabulation:
 
-**Note to self!** Maybe (probably) I need to select only for those with red flag `= TRUE`.
+- `signal_present = "Yes"`
+- `!is.na(sig_to_init)`
+- `!is.na(init_to_complete)`
 
+**Note to self!** Maybe (probably) I need to select only for those with red flag, meaning `signal_present = "Yes"`.
+
+
+### How can you get negative numbers?
+
+Workup completed (exactly one year) *before* workup initiated?
+
+```{r negatives}
+temporal_gv %>%
+  filter(signal_present=="Yes", sig_to_init < 0 | init_to_complete < 0) %>%
+  select(cancer_type, sig_to_init, init_to_complete, signal_date, dx_eval_init_date, dx_eval_complete_date) %>% 
+  kable()
+
+```
+
+I suspect there are entry errors in year here.
+
+### Non-NA `cor.test`
+
+```{r non-na-spearman}
+t_all <- temporal_gv %>%
+  filter(signal_present=="Yes", !is.na(sig_to_init)) %>%
+  select(cancer_type, site, Age, sig_to_init, init_to_complete)
+
+# FIXME cor.test(t_all$sig_to_init)
+```
 
 
 \newpage
