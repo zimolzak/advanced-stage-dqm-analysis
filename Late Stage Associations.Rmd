@@ -483,22 +483,50 @@ mean_text <- Vectorize(mean_text_scalar)
 
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
-  summarise(across(c(Age, signal_to_init, init_to_completion), q123)) %>% 
+  summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123)) %>% 
   pivot_longer(
     cols = starts_with(c("Age", "signal", "init")),
     names_to = c("variable", "statistic"),
     names_pattern = "(.*)_(.*)"
   ) %>%
+  filter(statistic!="mean", statistic!="sd") %>% 
   pivot_wider(names_from = statistic, values_from = value) %>% 
   # mutate(across(c(q1, median, q3, mean, sd), ~ round(.x, 1))) %>% 
   mutate(
     median_q1_q3 = median_text(median, q1, q3),
-    mean_sd = mean_text(mean, sd),
+    # mean_sd = mean_text(mean, sd),
     .keep = "unused"
   ) %>% 
-  arrange(desc(site), desc(cancer_type)) %>% 
+  pivot_wider(
+    names_from = c(site, cancer_type),
+    values_from = median_q1_q3
+  ) %>% 
+  relocate(variable, VA_Lung, VA_Colon, Geisinger_Lung, Geisinger_Colon) %>% 
   kable()
 ```
+
+```{r constants}
+yearly = seq(0, 6000, 365)
+monthly = seq(0, 6000, 365/12)
+quarterly = seq(0, 6000, 365/4)
+THREE_MONTHS = 365 / 4
+
+year_breaks_custom <- c(c(0, 0.25, 0.5), seq(1, 17, 1))
+day_breaks_custom <- year_breaks_custom * 365
+
+```
+
+
+```{r table-binning-not-really}
+
+# FIXME leftoff
+
+reviewed_all %>% 
+  ggplot(aes(x=signal_to_completion)) +
+  geom_histogram(breaks = day_breaks_custom) +
+  scale_x_continuous(breaks=seq(0, 6000, 365*2))
+```
+
 
 ## Plots for all sites/cancers
 
@@ -528,10 +556,22 @@ ggplot(reviewed_all, aes(x=init_to_completion)) +
 
 
 ```{r s2c, warning=FALSE}
-ggplot(reviewed_all, aes(x=signal_to_completion)) +
-  geom_histogram(bins=30) +
+
+
+reviewed_all %>% 
+  filter(MOD_definite == TRUE) %>% 
+  mutate(
+    signal_to_completion = case_when(
+      signal_to_completion > 730 ~ 730,
+      .default = signal_to_completion
+    )
+  ) %>% 
+ggplot(aes(x=signal_to_completion)) +
+  geom_histogram(binwidth = THREE_MONTHS) +
   facet_grid(vars(site, cancer_type)) +
-  coord_cartesian(xlim=c(0,365*2))
+  coord_cartesian(xlim=c(0,365*2)) +
+  scale_x_continuous(breaks = yearly, minor_breaks = quarterly) +
+  labs(title="Limited to MOD only, and capped at 2 y")
 
 ```
 
