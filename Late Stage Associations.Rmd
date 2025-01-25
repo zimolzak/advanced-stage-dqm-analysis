@@ -233,7 +233,8 @@ reviewed_all <- bind_rows(
     # NOTE the different naming "signal" vs "sig", and "completion" vs "complete"
     
     signal_to_init = as.numeric(dx_eval_init_date - signal_date),
-    init_to_completion = as.numeric(dx_eval_complete_date - dx_eval_init_date)
+    init_to_completion = as.numeric(dx_eval_complete_date - dx_eval_init_date),
+    signal_to_completion = as.numeric(dx_eval_complete_date - signal_date)
   )
 ```
 
@@ -450,7 +451,7 @@ bind_rows(
 
 
 
-```{r descriptives-continuous-strat, message=FALSE}
+```{r functions-continuous-vars}
 median_text_scalar <- function(m, q1, q3){
   vec <- c(
     as.character(round(m, 1)),
@@ -476,6 +477,10 @@ mean_text_scalar <- function(m, s){
 median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 
+```
+
+```{r table-descriptives-continuous-strat, message=FALSE}
+
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
   summarise(across(c(Age, signal_to_init, init_to_completion), q123)) %>% 
@@ -483,7 +488,7 @@ reviewed_all %>%
     cols = starts_with(c("Age", "signal", "init")),
     names_to = c("variable", "statistic"),
     names_pattern = "(.*)_(.*)"
-  ) %>% 
+  ) %>%
   pivot_wider(names_from = statistic, values_from = value) %>% 
   # mutate(across(c(q1, median, q3, mean, sd), ~ round(.x, 1))) %>% 
   mutate(
@@ -515,6 +520,23 @@ ggplot(reviewed_all, aes(x=init_to_completion)) +
   geom_histogram(bins=30) +
   facet_grid(vars(site, cancer_type))
 ```
+
+### Binning
+
+> temporal distribution of MODs, with regard to diagnosis (i.e. how many occurred <3 months prior to appropriate evaluation/diagnosis, vs 3–6 months, 6–12 mos, etc)
+
+
+
+```{r s2c, warning=FALSE}
+ggplot(reviewed_all, aes(x=signal_to_completion)) +
+  geom_histogram(bins=30) +
+  facet_grid(vars(site, cancer_type)) +
+  coord_cartesian(xlim=c(0,365*2))
+
+```
+
+
+
 
 \newpage
 
@@ -689,6 +711,37 @@ all_data %>%
 # Associations: chart review. FIXME: need to stratify lung and colon
 
 Left off here. *leftoff*
+
+## Associations needed to hypoth-test
+
+- $t_{si}$ gender $\times \{l, c\} \times \{v, g\}$, with quartiles
+- $t_{ic}$ gender $\times \{l, c\} \times \{v, g\}$, with quartiles
+- $t_{si}$ Age $\times \{l, c\} \times \{v, g\}$
+- $t_{ic}$ Age $\times \{l, c\} \times \{v, g\}$
+- $t_{si} t_{ic} \times \{l, c\} \times \{v, g\}$
+
+Or in notation, 
+
+$$ \{s_1, s_2, a_1, a_2, t\} \times \{l, c\} \times  \{v, g\} = |\mathbb{V}| \cdot |\mathbb{C}| \cdot |\mathbb{S}| = 20$$
+
+where $\mathbb{V}$ is what pair of variables you're correlating, $\mathbb{C}$ is `cancer_type`, and $\mathbb{S}$ is `site`.
+
+## Shell table for me
+
+Too abstract for paper
+
+```{r shell-table}
+tribble(
+  ~v1, ~v2, ~cancer, ~site,  ~pval,
+  "Sex",  "t_si", "Lung", "Geisinger", 0.07,
+  "sex", "t_si", "Colon", "Geisinger",  0.22,
+) %>% 
+  kable()
+
+
+```
+
+It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, but it's times 4 strata, so that's 8 tests. Best to have a Wilcoxon function for this table.
 
 ## Initiation time vs. gender plot
 
