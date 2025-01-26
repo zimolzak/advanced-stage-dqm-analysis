@@ -898,7 +898,7 @@ reviewed_all %>%
 
 
 
-# Associations: continuous vs.\ continuous
+# Associations: continuous vs. continuous
 
 ## Initiation time vs. age plot
 
@@ -912,21 +912,7 @@ r <- function(spear){
 }
 ```
 
-```{r define-temporal}
-temporal <- reviewed_geis_lung %>% 
-  mutate(
-    sig_to_init = as.numeric(dx_eval_init_date - signal_date),
-    init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
-  )
-
-temporal_gv <- reviewed_all %>% 
-  mutate(
-    sig_to_init = as.numeric(dx_eval_init_date - signal_date),
-    init_to_complete = as.numeric(dx_eval_complete_date - dx_eval_init_date)
-  )
-```
-
-```{r ia}
+```{r ia-test}
 sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
 # FIXME: 
 # make it use reviewed_all
@@ -938,7 +924,7 @@ Wrong: $P = `r p(sp_ia)`$
 
 Wrong: $\rho = `r r(sp_ia)`$
 
-```{r init-vs-age-plot}
+```{r ia-plot}
 ggplot(temporal, aes(x=Age, y=sig_to_init)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10()
