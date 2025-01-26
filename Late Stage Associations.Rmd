@@ -77,7 +77,7 @@ for (i in 1:length(si$otherPkgs)) {
 
 ```{r read, include=FALSE}
 
-# Column setup
+# Column setup (only for Geisinger Lung)
 
 geis_columns <- read_csv("geis_colnames.csv")
 coltype_spec <- paste0(geis_columns$type, collapse="")
@@ -101,10 +101,23 @@ lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv", c
   # mutate *after* assigning column names.
 colon_geis_raw <- read_csv("Late Stage CRC Final DU 1-26-22.csv") %>% 
   mutate(cancer_type = "Colon", site="Geisinger")
-lung_va_raw <- read_csv("VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
+
+# NOTE - there were garbage rows at the bottom of these ones marked "OLD"
+
+lung_va_raw_OLD <- read_csv("VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
   mutate(cancer_type = "Lung", site="VA")
-colon_va_raw <- read_csv("VA Colon stage review deid+MM3_CRC_Export.csv") %>% 
+colon_va_raw_OLD <- read_csv("VA Colon stage review deid+MM3_CRC_Export.csv") %>% 
   mutate(cancer_type = "Colon", site="VA")
+
+lung_va_raw <- read_csv("deid-again-2025-01/deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
+  mutate(cancer_type = "Lung", site="VA")
+
+colon_va_raw <- read_csv("deid-again-2025-01/deid+MM3_CRC_Export.csv") %>% 
+  mutate(cancer_type = "Colon", site="VA") %>% 
+  filter(!is.na(CancerStage)) %>% 
+# IMPORTANT - filtered out garbage rows at end (leftover of Excel export)
+  rename(siginit = `siginit-neg-never`)
+
 ```
 
 ```{r tidy-comprehensive}
@@ -131,6 +144,10 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
 
 colon <- all_data %>% filter(cancer_type == "Colon")
 lung <- all_data %>% filter(cancer_type == "Lung")
+
+# yes, we kind of use these later.
+# under "Associations: comprehensive data"
+# FIXME - maybe do it as group_by in future.
 ```
 
 ```{r dim-col-comprehensive, echo=TRUE}
@@ -140,6 +157,8 @@ colnames(all_data)
 
 ```{r tidy-chart-reviews, message=FALSE}
 colnames(lung_geis_raw) <- geis_columns$name
+
+yr_offset <- 365.25 * (2016 - 1970)  # to generate fake VA dates
 
 reviewed_geis_lung <- lung_geis_raw %>%
   mutate(
@@ -196,6 +215,14 @@ reviewed_geis_colon <- colon_geis_raw %>%
 reviewed_va_lung_colon <- lung_va_raw %>% 
   bind_rows(colon_va_raw) %>% 
   mutate(
+    siginit = case_when(
+      siginit < -40000 ~ NA,
+      .default = siginit
+    ),
+    initcomp = case_when(
+      initcomp < -40000 ~ NA,
+      .default = initcomp
+    ),
     signal_present = as.factor(RFYesNo),
     cancer_dx_considered = as.factor(RFInitialCancerDxConsidered),
     MOD_definite = case_when(
@@ -204,18 +231,19 @@ reviewed_va_lung_colon <- lung_va_raw %>%
       DxMOD == "Unsure" ~ FALSE,
       TRUE ~ NA
     ),
-    signal_date = as.Date(RFInitialOccDateTime),  # Sure, but these dates are all NA at present time.
-    dx_eval_init_date = as.Date(RFInitialFUReqDateTime),
-    dx_eval_complete_date = as.Date(RFInitialFUCompDateTime),
+    signal_date = as.Date(yr_offset),
+    dx_eval_init_date = as.Date(siginit + yr_offset),
+    dx_eval_complete_date = as.Date(siginit + initcomp + yr_offset),
     signal_type = as.factor(RFInitialRF)
   ) %>% 
   relocate(
     site, cancer_type,  # Age, Sex, Race, Location,
     signal_present, cancer_dx_considered, MOD_definite,
-    signal_date, dx_eval_init_date, dx_eval_complete_date, signal_type
+    signal_date, dx_eval_init_date, dx_eval_complete_date, signal_type,
+    siginit, initcomp
   )
 
-# FIXME - need to get all the VA date data !!
+# IMPORTANT list of kept variables below.
 
 reviewed_all <- bind_rows(
     reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon
