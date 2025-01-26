@@ -517,15 +517,17 @@ day_breaks_custom <- year_breaks_custom * 365
 ```
 
 
-```{r table-binning-not-really}
-
-# FIXME leftoff
+```{r fig-binning-custom-histo}
 
 reviewed_all %>% 
   ggplot(aes(x=signal_to_completion)) +
   geom_histogram(breaks = day_breaks_custom) +
   scale_x_continuous(breaks=seq(0, 6000, 365*2))
+
+
 ```
+
+
 
 
 ## Plots for all sites/cancers
@@ -551,11 +553,20 @@ ggplot(reviewed_all, aes(x=init_to_completion)) +
 
 ### Binning
 
-> temporal distribution of MODs, with regard to diagnosis (i.e. how many occurred <3 months prior to appropriate evaluation/diagnosis, vs 3–6 months, 6–12 mos, etc)
+We are trying to show the...
+
+> temporal distribution of MODs, with regard to diagnosis (i.e. how many occurred <3 months prior to appropriate evaluation/diagnosis, vs 3–6 months, 6–12 mos, etc)....
 
 
+```{r constants-ed}
+year_breaks_ed <- c(0, 0.25, 0.5, 1, 2, 3 ,4, 20)
+month_breaks_ed <- year_breaks_ed * 12
+day_breaks_ed <- year_breaks_ed * 365
 
-```{r s2c, warning=FALSE}
+```
+
+
+```{r s2c-plot, warning=FALSE}
 
 
 reviewed_all %>% 
@@ -572,6 +583,25 @@ ggplot(aes(x=signal_to_completion)) +
   coord_cartesian(xlim=c(0,365*2)) +
   scale_x_continuous(breaks = yearly, minor_breaks = quarterly) +
   labs(title="Limited to MOD only, and capped at 2 y")
+
+```
+
+```{r table-binning}
+
+reviewed_all %>% 
+  filter(MOD_definite == TRUE) %>% 
+  mutate(
+    months = signal_to_completion /  (365 / 12),
+    
+    signal_to_completion_months = cut(months, breaks=month_breaks_ed),
+    .before = everything()
+  ) %>% 
+  group_by(site, cancer_type) %>% 
+  count(signal_to_completion_months, .drop = FALSE) %>% 
+  mutate(s = sum(n), Percent = percentage_text(n, s), .before = everything()) %>% 
+  select(site, cancer_type, Percent, signal_to_completion_months) %>% 
+  pivot_wider(id_cols = signal_to_completion_months, names_from = c(site, cancer_type), values_from = Percent) %>% 
+  kable()
 
 ```
 
