@@ -17,7 +17,7 @@ output: pdf_document
     - [x] `colon_geis_raw`
     - [x] `lung_va_raw`
     - [x] `colon_va_raw`
-    - [ ] ***VA date data!*** (re-export?) FIXME
+    - [x] VA date data (re-export?)
     - [ ] ...and sex, and age.
 - Analyses
     - [x] Oh dear, what if "date of completion" varies by reviewer.
@@ -147,7 +147,7 @@ lung <- all_data %>% filter(cancer_type == "Lung")
 
 # yes, we kind of use these later.
 # under "Associations: comprehensive data"
-# FIXME - maybe do it as group_by in future.
+# FIXME_maybe - do it as group_by in future.
 ```
 
 ```{r dim-col-comprehensive, echo=TRUE}
@@ -319,7 +319,7 @@ percentage_text <- function(numerator, denominator) {
   return(final_text)
 }
 
-q123 <- list(
+q123ms <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
   median = ~quantile(.x, 0.5, na.rm = TRUE),
   q3 = ~quantile(.x, 0.75, na.rm = TRUE),
@@ -352,7 +352,7 @@ all_data %>%
   geom_histogram(binwidth = 2)
 
 all_data %>% 
-  summarise(across(Age, q123)) %>% 
+  summarise(across(Age, q123ms)) %>% 
   kable()
 ```
 
@@ -511,7 +511,7 @@ mean_text <- Vectorize(mean_text_scalar)
 
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
-  summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123)) %>% 
+  summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123ms)) %>% 
   pivot_longer(
     cols = starts_with(c("Age", "signal", "init")),
     names_to = c("variable", "statistic"),
@@ -794,7 +794,7 @@ assoc %>%
 ```{r age-assoc, message=FALSE}
 all_data %>% 
   group_by(cancer_type, Stage) %>% 
-  summarise(across(Age, q123)) %>% 
+  summarise(across(Age, q123ms)) %>% 
   unite(Age_median, Age_q1, col="Median_Q1", sep = " (") %>% 
   unite(Median_Q1, Age_q3, col = "Median_Q1_Q3", sep = " - ") %>% 
   unite(Age_mean, Age_sd, col="Mean_SD", sep = " (") %>% 
@@ -812,13 +812,13 @@ Left off here. *leftoff*
 
 ## Associations needed to hypoth-test
 
-- $t_{si}$ gender $\times \{l, c\} \times \{v, g\}$, with quartiles
-- $t_{ic}$ gender $\times \{l, c\} \times \{v, g\}$, with quartiles
-- $t_{si}$ Age $\times \{l, c\} \times \{v, g\}$
-- $t_{ic}$ Age $\times \{l, c\} \times \{v, g\}$
-- $t_{si} t_{ic} \times \{l, c\} \times \{v, g\}$
+- $P(s_1)$: gender $\sim t_{si} \times \{l, c\} \times \{v, g\}$, with quartiles
+- $P(s_2)$: gender $\sim t_{ic} \times \{l, c\} \times \{v, g\}$, with quartiles
+- $\rho(a_1)$: Age $\sim t_{si} \times \{l, c\} \times \{v, g\}$
+- $\rho(a_2)$: Age $\sim t_{ic} \times \{l, c\} \times \{v, g\}$
+- $\rho(t): t_{si} \sim t_{ic} \times \{l, c\} \times \{v, g\}$
 
-Or in notation, 
+Or in notation,
 
 $$ \{s_1, s_2, a_1, a_2, t\} \times \{l, c\} \times  \{v, g\} = |\mathbb{V}| \cdot |\mathbb{C}| \cdot |\mathbb{S}| = 20$$
 
@@ -840,6 +840,15 @@ tribble(
 ```
 
 It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, but it's times 4 strata, so that's 8 tests. Best to have a Wilcoxon function for this table.
+
+## Thorough, stratified hypothesis tests
+
+```{r many-wilcoxon}
+
+
+
+```
+
 
 ## Initiation time vs. gender plot
 
@@ -892,7 +901,7 @@ pval_row <- tribble(
 reviewed_all %>% 
   # filter(!is.na(Sex)) %>%   # Don't filter for now, so we see when NAs are present.
   group_by(site, cancer_type, Sex) %>% 
-  summarise(across(signal_to_init:init_to_completion, q123), n=n()) %>% 
+  summarise(across(signal_to_init:init_to_completion, q123ms), n=n()) %>% 
   select(!contains(c("mean", "sd"))) %>% 
   unite(signal_to_init_median, signal_to_init_q1, col="signal_to_init", sep=" (") %>% 
   unite(signal_to_init, signal_to_init_q3, col="signal_to_init", sep=" - ") %>% 
