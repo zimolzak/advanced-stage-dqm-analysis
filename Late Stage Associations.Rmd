@@ -854,7 +854,8 @@ reviewed_all %>%
       ~ wilcox.test(. ~ Sex)$p.value,
       .names = "p_Sex_{.col}"
     )
-  )
+  ) %>% 
+  kable()
 ```
 
 ## Initiation time vs. gender plot
@@ -912,7 +913,17 @@ r <- function(spear){
 }
 ```
 
-```{r ia-test}
+Left off here. *leftoff*
+
+Get rid of all the `eval=FALSE`
+
+Do something with `cor.test()` like the way we used `wilcox.test()` with a formula. See line 854 or so, above. Here is the function we will apply using `across()`:
+
+`~ wilcox.test(. ~ Sex)$p.value`
+
+...but probably need to use a `list()` or something, because extracting both $P$ and $\rho$.
+
+```{r ia-test, eval=FALSE}
 sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
 # FIXME: 
 # make it use reviewed_all
@@ -920,11 +931,8 @@ sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
 # stratify
 ```
 
-Wrong: $P = `r p(sp_ia)`$
 
-Wrong: $\rho = `r r(sp_ia)`$
-
-```{r ia-plot}
+```{r ia-plot, eval=FALSE}
 ggplot(temporal, aes(x=Age, y=sig_to_init)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10()
@@ -938,25 +946,6 @@ ggplot(temporal, aes(x=Age, y=sig_to_init)) +
 
 ### Sanity check
 
-These should be the same:
-
-```{r sanity}
-g  <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
-gv <- cor.test(temporal_gv$Age, temporal_gv$sig_to_init, method = "spearman")
-p(g)
-p(gv)
-r(g)
-r(gv)
-
-temporal_gv %>% filter(site == "Geisinger", is.na(sig_to_init)) %>% select(cancer_type, signal_date, dx_eval_init_date, MOD_definite, signal_present) %>% summary()
-
-temporal_gv %>% 
-  mutate(sina = is.na(sig_to_init), icna = is.na(init_to_complete)) %>% 
-  count(site, cancer_type, signal_present, sina, icna) %>% 
-  arrange(sina) %>% 
-  kable()
-```
-
 *Lesson:* Something weird about how cor.test handles NAs.
 
 *Lesson:* Basically, there are (only) $n_l = 65$ Geisinger lung and $n_c = 70$ Geisinger colon with "temporality" data. $n = n_l + n_c = 135$. And the following predicates map 1:1 in the crosstabulation:
@@ -967,13 +956,12 @@ temporal_gv %>%
 
 **Note to self!** Maybe (probably) I need to select only for those with red flag, meaning `signal_present = "Yes"`.
 
-
 ### How can you get negative numbers?
 
 Workup completed (exactly one year) *before* workup initiated?
 
-```{r negatives}
-temporal_gv %>%
+```{r negatives, eval=FALSE}
+temporal_gv %>%  # FIXME
   filter(signal_present=="Yes", sig_to_init < 0 | init_to_complete < 0) %>%
   select(cancer_type, sig_to_init, init_to_complete, signal_date, dx_eval_init_date, dx_eval_complete_date) %>% 
   kable()
@@ -985,8 +973,8 @@ I suspect there are entry errors in year here.
 
 (Starting with correlation of `Age` and `sig_to_init`, like we did under "Sanity Check," above.)
 
-```{r non-na-spearman}
-t_all <- temporal_gv %>%
+```{r non-na-spearman, eval=FALSE}
+t_all <- temporal_gv %>%  # FIXME
   filter(signal_present=="Yes", !is.na(sig_to_init)) %>%
   select(cancer_type, site, Age, sig_to_init, init_to_complete, Reviewer)
 
@@ -1013,7 +1001,7 @@ tribble(
 
 ### Interval plot
 
-```{r wacky-time-plot}
+```{r wacky-time-plot, eval=FALSE}
 t_all %>% 
   filter(cancer_type == "Lung") %>% 
   # arrange(sig_to_init + init_to_complete) %>% 
@@ -1038,7 +1026,7 @@ t_all %>%
 
 ### Reviewer bias?
 
-```{r exploratory-reviewer-bias}
+```{r exploratory-reviewer-bias, eval=FALSE}
 t_all %>% 
   pivot_longer(cols = c(sig_to_init, init_to_complete), names_to = "varname") %>% 
   filter(cancer_type=="Lung") %>% 
@@ -1085,22 +1073,18 @@ wilcox.test(r_ic, s_ic)
 
 
 
-# End of digression. FIXME: wrong stats still in this section.
+# Associations: continuous vs. continuous
 
 Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only ever used to use lung! It ignored colon.
 
 ## Completion time vs. age (multiple plots)
 
-```{r ca}
+```{r ca, eval=FALSE}
 sp_ca <- cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat significant
 # FIXME: same as other cor.test. (reviewed_all, filter, stratify)
 ```
 
-$P = `r p(sp_ca)`$
-
-$\rho = `r r(sp_ca)`$
-
-```{r completion-age-plots}
+```{r completion-age-plots, eval=FALSE}
 ggplot(temporal, aes(x=Age, y=init_to_complete)) +
   geom_jitter(alpha=0.5) +
   xlim(40, 90) +
@@ -1128,16 +1112,12 @@ ggplot(temporal, aes(x=Age, y=init_to_complete)) +
 
 ## Initiation time vs. completion time (plots are too wacky)
 
-```{r ic}
+```{r ic, eval=FALSE}
 sp_ic <- cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat significant
 # FIXME (reviewed_all, filter, stratify)
 ```
 
-$P = `r p(sp_ic)`$
-
-$\rho = `r r(sp_ic)`$
-
-```{r init-completion-wacky-plots}
+```{r init-completion-wacky-plots, eval=FALSE}
 ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
   geom_jitter(alpha=0.5) +
   scale_y_log10() + scale_x_log10()
