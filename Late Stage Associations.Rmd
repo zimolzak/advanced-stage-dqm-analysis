@@ -806,9 +806,10 @@ all_data %>%
   kable()
 ```
 
-# Associations: chart review. FIXME: need to stratify lung and colon
 
-Left off here. *leftoff*
+
+
+# Notes to self
 
 ## Associations needed to hypoth-test
 
@@ -831,26 +832,30 @@ Too abstract for paper
 ```{r shell-table}
 tribble(
   ~v1, ~v2, ~cancer, ~site,  ~pval,
-  "Sex",  "t_si", "Lung", "Geisinger", 0.07,
-  "sex", "t_si", "Colon", "Geisinger",  0.22,
+  "Sex",  "t_si", "Lung", "Geisinger", "tk",
+  "sex", "t_si", "Colon", "Geisinger",  "tk",
 ) %>% 
   kable()
-
-
 ```
 
 It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, but it's times 4 strata, so that's 8 tests. Best to have a Wilcoxon function for this table.
 
-## Good wilcoxon
+# Associations: chart review
+
+## Table: stratified $P$ values (gender)
 
 ```{r good-wilcox}
 reviewed_all %>%
   group_by(site, cancer_type) %>%
   filter(!is.na(signal_to_init), !is.na(Sex)) %>%
-  summarise(w = wilcox.test(signal_to_init ~ Sex)$p.value)
+  summarise(
+    across(
+      c(signal_to_init, init_to_completion),
+      ~ wilcox.test(. ~ Sex)$p.value,
+      .names = "p_Sex_{.col}"
+    )
+  )
 ```
-
-
 
 ## Initiation time vs. gender plot
 
@@ -860,17 +865,6 @@ reviewed_all %>%
   ggplot(aes(signal_to_init)) +
   geom_histogram() +
   facet_grid(rows=vars(Sex), cols = vars(site, cancer_type))
-
-wilc_s2i_gender <- wilcox.test(
-  reviewed_all %>% filter(Sex == "M") %>% pull(signal_to_init),
-  reviewed_all %>% filter(Sex == "F") %>% pull(signal_to_init)
-)
-# FIXME - This stat test merges lung & colon.
-# stratify
-# probably filter NA to be safe
-# Plots are okay, though!
-wilc_s2i_gender
-p_init_gender <- wilc_s2i_gender$p.value
 ```
 
 ## Completion time vs. gender plot
@@ -881,25 +875,11 @@ reviewed_all %>%
   ggplot(aes(init_to_completion)) +
   geom_histogram() +
   facet_grid(rows=vars(Sex), cols = vars(site, cancer_type))
-
-wilc_i2c_gender <- wilcox.test(
-  reviewed_all %>% filter(Sex == "M") %>% pull(init_to_completion),
-  reviewed_all %>% filter(Sex == "F") %>% pull(init_to_completion)
-) # FIXME
-# stratify
-# filter to be safe
-wilc_i2c_gender
-p_completion_gender <- wilc_i2c_gender$p.value
 ```
 
 ## Table: Time intervals vs. gender
 
 ```{r time-gender-table}
-pval_row <- tribble(
-  ~Sex, ~signal_to_init, ~init_to_completion,
-  "P value", as.character(round(p_init_gender, 3)), as.character(round(p_completion_gender, 3))
-)
-
 reviewed_all %>% 
   # filter(!is.na(Sex)) %>%   # Don't filter for now, so we see when NAs are present.
   group_by(site, cancer_type, Sex) %>% 
@@ -910,7 +890,6 @@ reviewed_all %>%
   unite(init_to_completion_median, init_to_completion_q1, col="init_to_completion", sep=" (") %>% 
   unite(init_to_completion, init_to_completion_q3, col="init_to_completion", sep=" - ") %>% 
   mutate(across(contains("to"), ~ paste0(.x, ")"))) %>% 
-  bind_rows(pval_row) %>% 
   kable()
 ```
 
@@ -919,7 +898,7 @@ reviewed_all %>%
 
 
 
-# OLD DATA FRAME `temporal`
+# Associations: continuous vs.\ continuous
 
 ## Initiation time vs. age plot
 
@@ -1012,7 +991,6 @@ temporal_gv %>%
   filter(signal_present=="Yes", sig_to_init < 0 | init_to_complete < 0) %>%
   select(cancer_type, sig_to_init, init_to_complete, signal_date, dx_eval_init_date, dx_eval_complete_date) %>% 
   kable()
-
 ```
 
 I suspect there are entry errors in year here.
@@ -1045,9 +1023,7 @@ tribble(
     across(c(p.value, rho), ~ round(., 3))
   ) %>% 
   kable()
-
 ```
-
 
 ### Interval plot
 
@@ -1072,16 +1048,11 @@ t_all %>%
   geom_linerange(aes(xmin = vmin, xmax=vmax, color=factor(Reviewer))) +
   geom_linerange(aes(xmin = 0, xmax=vmin, color=factor(Reviewer)), alpha = 0.2) +
   scale_x_sqrt()
-
-
 ```
-
 
 ### Reviewer bias?
 
 ```{r exploratory-reviewer-bias}
-
-
 t_all %>% 
   pivot_longer(cols = c(sig_to_init, init_to_complete), names_to = "varname") %>% 
   filter(cancer_type=="Lung") %>% 
@@ -1096,7 +1067,6 @@ t_all %>%
   arrange(desc(varname)) %>% 
   kable()
 
-
 r_si <- t_all %>% filter(cancer_type=="Lung",
                          Reviewer=="MRR") %>% pull(sig_to_init)
 r_ic <- t_all %>% filter(cancer_type=="Lung",
@@ -1105,9 +1075,6 @@ s_si <- t_all %>% filter(cancer_type=="Lung",
                          Reviewer=="SK") %>% pull(sig_to_init)
 s_ic <- t_all %>% filter(cancer_type=="Lung",
                          Reviewer=="SK") %>% pull(init_to_complete)
-
-
-
 
 t_all %>% 
   filter(cancer_type=="Lung") %>% 
@@ -1123,8 +1090,6 @@ t_all %>%
   geom_jitter(width = 0, height=0.25, alpha = 0.4) +
   scale_x_sqrt()
 
-
-
 wilcox.test(r_si, s_si)
 wilcox.test(r_ic, s_ic)
 ```
@@ -1135,6 +1100,8 @@ wilcox.test(r_ic, s_ic)
 
 
 # End of digression. FIXME: wrong stats still in this section.
+
+Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only ever used to use lung! It ignored colon.
 
 ## Completion time vs. age (multiple plots)
 
