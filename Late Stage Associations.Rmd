@@ -844,7 +844,23 @@ It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, 
 ## Thorough, stratified hypothesis tests
 
 ```{r many-wilcoxon}
+q123_text <- function(x) {
+  q <- round(quantile(x, c(0.25, 0.5, 0.75), na.rm = TRUE, names = FALSE))
+  return(
+    paste0(
+      q[2],
+      " (",
+      q[1],
+      " - ",
+      q[3],
+      ")"
+    )
+  )
+}
 
+p_sex <- function(x) {
+  
+}
 
 
 ```
