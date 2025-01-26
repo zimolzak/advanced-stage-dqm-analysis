@@ -841,29 +841,15 @@ tribble(
 
 It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, but it's times 4 strata, so that's 8 tests. Best to have a Wilcoxon function for this table.
 
-## Thorough, stratified hypothesis tests
+## Good wilcoxon
 
-```{r many-wilcoxon}
-q123_text <- function(x) {
-  q <- round(quantile(x, c(0.25, 0.5, 0.75), na.rm = TRUE, names = FALSE))
-  return(
-    paste0(
-      q[2],
-      " (",
-      q[1],
-      " - ",
-      q[3],
-      ")"
-    )
-  )
-}
-
-p_sex <- function(x) {
-  
-}
-
-
+```{r good-wilcox}
+reviewed_all %>%
+  group_by(site, cancer_type) %>%
+  filter(!is.na(signal_to_init), !is.na(Sex)) %>%
+  summarise(w = wilcox.test(signal_to_init ~ Sex)$p.value)
 ```
+
 
 
 ## Initiation time vs. gender plot
