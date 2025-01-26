@@ -6,6 +6,7 @@
 *.docx
 *.xlsx
 *~
+*.zip
 .DS_Store
 
 Late Stage CRC Final DU 1-26-22.csv
@@ -14,5 +15,7 @@ VA Colon stage review deid+MM3_CRC_Export.csv
 VA Lung comprehensive.csv
 VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv
 final lung LS for Houston de-id Divvy 3-28-22.csv
+
+deid-again-2025-01/
 
 !geis_colnames.csv
