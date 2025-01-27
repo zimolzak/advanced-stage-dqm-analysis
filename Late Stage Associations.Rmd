@@ -940,30 +940,28 @@ reviewed_all %>%
 ```
 
 ```{r correlations-full-table}
-pval_rho <- list(
-  p_value = ~cor.test(., method = "spearman")$p.value,
-  rho = ~cor.test(., method = "spearman")$estimate
-)
 
-cor.p <- function(vec1, vec2) {
-  result <- cor.test(~vec1 + vec2, method = "spearman")
-  return(p(result))
+spear.unpack <- function(vec1, vec2, func) {
+  if (sum(is.na(vec1)) == length(vec1)) {
+     return(NA)
+  }
+  if (sum(is.na(vec2)) == length(vec2)) {
+     return(NA)
+  }
+  
+  result <- cor.test(vec1, vec2, method="spearman")
+
+    return(func(result))
+
+  
 }
-
-cor.p <- function(vec1, vec2) {
-  result <- cor.test(~vec1 + vec2, method = "spearman")
-  return(p(result))
-}
-
 
 
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
   filter(signal_present=="Yes", MOD_definite) %>% 
   summarise(
-    across(where(~ signal_to_init + init_to_completion), pval_rho)
-  # summarise(
-  #   st12 = cor.test(~ signal_to_init + init_to_completion, method="spearman")$p.value
+    Age_t12_p = spear.unpack(Age, init_to_completion, p)
   )
 ```
 
