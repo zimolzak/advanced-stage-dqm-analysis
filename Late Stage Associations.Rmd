@@ -330,10 +330,8 @@ q123ms <- list(
 )
 ```
 
-## VA sex, race, age
-
-```{r va-demographics, message=FALSE}
-all_data %>%
+```{r prep-categor-subtables, message=FALSE}
+compr_sex <- all_data %>%
   group_by(site, cancer_type) %>% 
   count(Sex) %>% 
   mutate(d = sum(n)) %>% 
@@ -341,10 +339,9 @@ all_data %>%
   filter(Sex == "M") %>% 
   pivot_wider(names_from = cancer_type, values_from = Percent) %>% 
   mutate(Characteristic = "Sex") %>% 
-  rename(Level = Sex) %>% 
-  kable()
+  rename(Level = Sex)
 
-all_data %>%
+compr_race <- all_data %>%
   group_by(site, cancer_type) %>% 
   count(Race) %>% 
   mutate(d = sum(n)) %>% 
@@ -352,15 +349,9 @@ all_data %>%
   mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
   pivot_wider(names_from = cancer_type, values_from = Percent) %>% 
   mutate(Characteristic = "Race") %>% 
-  rename(Level = Race) %>% 
-  kable()
+  rename(Level = Race)
 
-all_data %>% 
-  ggplot(aes(x=Age)) +
-  geom_histogram(binwidth = 2) +
-  facet_grid(rows=vars(cancer_type))
-
-all_data %>%
+compr_age <- all_data %>%
   group_by(site, cancer_type) %>% 
   summarise(across(Age, q123ms)) %>% 
   unite(col = quartiles, c(Age_median, Age_q1), sep = " (") %>% 
@@ -368,14 +359,11 @@ all_data %>%
   mutate(quartiles = paste0(quartiles, ")")) %>% 
   select(site, cancer_type, quartiles) %>% 
   pivot_wider(names_from = cancer_type, values_from = quartiles) %>% 
-  mutate(Characteristic = "Age") %>% 
-  kable()
+  mutate(Characteristic = "Age")
 ```
 
-## Table of advanced-stage percentages
-
-```{r measure-distribution}
-rbind(  # FIXME_maybe - should we use bind_rows() ?
+```{r final-all-descr-table}
+compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   all_data %>% 
     group_by(site, cancer_type) %>% 
     count() %>%
@@ -393,9 +381,25 @@ rbind(  # FIXME_maybe - should we use bind_rows() ?
     VA_Colon = percentage_text(VA_Colon_Advanced, VA_Colon_Total),
     Geisinger_Lung = percentage_text(Geisinger_Lung_Advanced, Geisinger_Lung_Total),
     Geisinger_Colon = percentage_text(Geisinger_Colon_Advanced, Geisinger_Colon_Total),
+    Characteristic = "Advanced stage",
     .keep = "unused"
-  ) %>% 
+  )
+
+bind_rows(compr_sex, compr_race, compr_age) %>% 
+  ungroup() %>% 
+  select(Characteristic, Level, Lung, Colon) %>% 
+  rename(VA_Lung = Lung, VA_Colon = Colon) %>%   # have to rename first
+  bind_rows(compr_adv) %>% 
   kable()
+```
+
+## Figure: age
+
+```{r plot-age-simple}
+all_data %>% 
+  ggplot(aes(x=Age)) +
+  geom_histogram(binwidth = 2) +
+  facet_grid(rows=vars(cancer_type))
 ```
 
 ## For editor comment (PCP visit criterion/flow)
