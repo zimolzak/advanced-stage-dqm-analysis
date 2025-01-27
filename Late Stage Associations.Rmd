@@ -483,6 +483,7 @@ bind_rows(
 
 
 
+
 ## Table: quartiles of age and times
 
 ```{r functions-continuous-vars}
@@ -510,7 +511,6 @@ mean_text_scalar <- function(m, s){
 
 median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
-
 ```
 
 ```{r table-descriptives-continuous-strat, message=FALSE}
@@ -548,7 +548,6 @@ THREE_MONTHS = 365 / 4
 
 year_breaks_custom <- c(c(0, 0.25, 0.5), seq(1, 17, 1))
 day_breaks_custom <- year_breaks_custom * 365
-
 ```
 
 ```{r fig-binning-custom-histo, warning=FALSE}
@@ -557,9 +556,6 @@ reviewed_all %>%
   geom_histogram(breaks = day_breaks_custom) +
   scale_x_continuous(breaks=seq(0, 6000, 365*2))
 ```
-
-
-
 
 ## Plots: age and times
 
@@ -575,7 +571,6 @@ ggplot(reviewed_all, aes(x=signal_to_init)) +
   facet_grid(vars(site, cancer_type))
 ```
 
-
 ```{r descrip-facet-i2c, warning=FALSE}
 ggplot(reviewed_all, aes(x=init_to_completion)) +
   geom_histogram(bins=30) +
@@ -588,14 +583,11 @@ What we want:
 
 > temporal distribution of MODs, with regard to diagnosis (i.e. how many occurred <3 months prior to appropriate evaluation/diagnosis, vs 3–6 months, 6–12 mos, etc)....
 
-
 ```{r constants-ed}
 year_breaks_ed <- c(0, 0.25, 0.5, 1, 2, 3 ,4, 20)
 month_breaks_ed <- year_breaks_ed * 12
 day_breaks_ed <- year_breaks_ed * 365
-
 ```
-
 
 ```{r s2c-plot, warning=FALSE}
 reviewed_all %>% 
@@ -612,7 +604,6 @@ ggplot(aes(x=signal_to_completion)) +
   coord_cartesian(xlim=c(0,365*2)) +
   scale_x_continuous(breaks = yearly, minor_breaks = quarterly) +
   labs(title="Limited to MOD only, and capped at 2 y")
-
 ```
 
 ```{r table-binning}
@@ -629,11 +620,7 @@ reviewed_all %>%
   select(site, cancer_type, Percent, signal_to_completion_months) %>% 
   pivot_wider(id_cols = signal_to_completion_months, names_from = c(site, cancer_type), values_from = Percent) %>% 
   kable()
-
 ```
-
-
-
 
 \newpage
 
@@ -714,9 +701,6 @@ assoc %>%
   kable()
 ```
 
-
-
-
 ## Colon stage/age plot
 
 ```{r plot-colon-age, message=FALSE, warning=FALSE}
@@ -757,8 +741,6 @@ ggplot(data = lung, aes(Age)) +
   xlim(20, 100)
 ```
 
-
-
 ## Table: Age quartiles vs. advanced-stage status
 
 This goes along with the density plots earlier. All $P$ values are by Wilcoxon.
@@ -781,51 +763,6 @@ all_data %>%
 
 
 
-
-# Notes to self
-
-## Associations needed to hypoth-test
-
-- $P(s_1)$: gender $\sim t_{si} \times \{l, c\} \times \{v, g\}$, with quartiles
-- $P(s_2)$: gender $\sim t_{ic} \times \{l, c\} \times \{v, g\}$, with quartiles
-- $\rho(a_1)$: Age $\sim t_{si} \times \{l, c\} \times \{v, g\}$
-- $\rho(a_2)$: Age $\sim t_{ic} \times \{l, c\} \times \{v, g\}$
-- $\rho(t): t_{si} \sim t_{ic} \times \{l, c\} \times \{v, g\}$
-
-Or in notation,
-
-$$ \{s_1, s_2, a_1, a_2, t\} \times \{l, c\} \times  \{v, g\} = |\mathbb{V}| \cdot |\mathbb{C}| \cdot |\mathbb{S}| = 20$$
-
-where $\mathbb{V}$ is what pair of variables you're correlating, $\mathbb{C}$ is `cancer_type`, and $\mathbb{S}$ is `site`.
-
-Maybe a notation better illustrating the pairing would be something like:
-
-$$ \{st, su, at, au, tu\} \times \{l, c\} \times  \{v, g\}$$
-
-var  |  sex  |   age   |  $t_{si}$   |   $t_{ic}$
------|-------|---------|-------------|-------------
-sex  |  x    |         |      s1     |     s2
-age  |  x    |    x    |      a1     |     a2         
-tsi  |  x    |    x    |      x      |     t         
-tic  |  x    |    x    |      x      |     x
-
-
-
-
-## Shell table for me
-
-Too abstract for paper
-
-```{r shell-table}
-tribble(
-  ~v1, ~v2, ~cancer, ~site,  ~pval,
-  "Sex",  "t_si", "Lung", "Geisinger", "tk",
-  "sex", "t_si", "Colon", "Geisinger",  "tk",
-) %>% 
-  kable()
-```
-
-It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, but it's times 4 strata, so that's 8 tests. Best to have a Wilcoxon function for this table.
 
 # Associations: chart review
 
@@ -969,12 +906,7 @@ reviewed_all %>%
   kable()
 ```
 
-
-
 ## Initiation time vs. age
-
-
-
 
 ```{r ia-plot, warning=FALSE}
 reviewed_all %>% 
@@ -984,11 +916,6 @@ ggplot(aes(x=Age, y=signal_to_init)) +
   scale_y_log10() +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
-
-
-
-
-
 
 Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only ever used to use lung! It ignored colon.
 
@@ -1003,11 +930,6 @@ ggplot(aes(x=Age, y=init_to_completion)) +
   scale_y_sqrt() +
   coord_cartesian(ylim=c(0,2000)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
-
-
-
-
-
 ```
 
 \newpage
@@ -1024,165 +946,4 @@ ggplot(aes(x=signal_to_init, y=init_to_completion)) +
   scale_x_sqrt() +
   coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
-```
-
-
-\newpage
-
-
-# FIXME - Digression: Exploratory analysis
-
-## GGally
-
-```{r ggally-LONG, eval=FALSE, echo=TRUE, message=FALSE, warning=FALSE}
-library(GGally)
-
-reviewed_all %>% 
-  filter(cancer_type=="Lung", site=="VA") %>% 
-  select(MOD_definite, signal_to_init, init_to_completion) %>% 
-  ggpairs() +
-  labs(title="VA Lung")
-
-reviewed_all %>% 
-  filter(cancer_type=="Colon", site=="VA") %>% 
-  select(MOD_definite, signal_to_init, init_to_completion) %>% 
-  ggpairs() +
-  labs(title="VA Colon")
-
-reviewed_all %>% 
-  filter(cancer_type=="Lung", site=="Geisinger") %>% 
-  select(Age, Sex, MOD_definite, signal_to_init, init_to_completion) %>% 
-  ggpairs() +
-  labs(title="Geisinger Lung")
-
-reviewed_all %>% 
-  filter(cancer_type=="Colon", site=="Geisinger") %>% 
-  select(Age, Sex, MOD_definite, signal_to_init, init_to_completion) %>% 
-  ggpairs() +
-  labs(title="Geisinger Colon")
-```
-
-
-## Sanity check
-
-*Lesson:* Something weird about how cor.test handles NAs.
-
-*Lesson:* Basically, there are (only) $n_l = 65$ Geisinger lung and $n_c = 70$ Geisinger colon with "temporality" data. $n = n_l + n_c = 135$. And the following predicates map 1:1 in the crosstabulation:
-
-- `signal_present = "Yes"`
-- `!is.na(sig_to_init)`
-- `!is.na(init_to_complete)`
-
-**Note to self!** Maybe (probably) I need to select only for those with red flag, meaning `signal_present = "Yes"`.
-
-## How can you get negative numbers?
-
-Workup completed (exactly one year) *before* workup initiated?
-
-```{r negatives, eval=FALSE}
-temporal_gv %>%  # FIXME
-  filter(signal_present=="Yes", sig_to_init < 0 | init_to_complete < 0) %>%
-  select(cancer_type, sig_to_init, init_to_complete, signal_date, dx_eval_init_date, dx_eval_complete_date) %>% 
-  kable()
-```
-
-I suspect there are entry errors in year here.
-
-## Correct stats: Non-NA `cor.test`
-
-(Starting with correlation of `Age` and `sig_to_init`, like we did under "Sanity Check," above.)
-
-```{r non-na-spearman, eval=FALSE}
-t_all <- temporal_gv %>%  # FIXME
-  filter(signal_present=="Yes", !is.na(sig_to_init)) %>%
-  select(cancer_type, site, Age, sig_to_init, init_to_complete, Reviewer)
-
-cor_ic <- cor.test(t_all$sig_to_init, t_all$init_to_complete, method = "spearman")
-cor_ac <- cor.test(t_all$Age, t_all$init_to_complete, method = "spearman")
-cor_ai <- cor.test(t_all$Age, t_all$sig_to_init, method = "spearman")
-
-cor_ic
-cor_ac
-cor_ai
-
-tribble(
-  ~var1, ~var2, ~p.value, ~rho,
-  "sig_to_init", "init_to_complete", cor_ic$p.value, cor_ic$estimate,
-  "Age", "init_to_complete", cor_ac$p.value, cor_ac$estimate,
-  "Age", "sig_to_init", cor_ai$p.value, cor_ai$estimate
-) %>% 
-  mutate(
-    neg_log_p = round(-1 * log10(p.value), 1),
-    across(c(p.value, rho), ~ round(., 3))
-  ) %>% 
-  kable()
-```
-
-## Interval plot
-
-```{r wacky-time-plot, eval=FALSE}
-t_all %>% 
-  filter(cancer_type == "Lung") %>% 
-  # arrange(sig_to_init + init_to_complete) %>% 
-  arrange(sig_to_init) %>% 
-  mutate(
-    sig_to_complete = sig_to_init + init_to_complete,
-    patient_id = row_number(),
-    vmin = sig_to_init,
-    vmax = sig_to_complete
-  ) %>% 
-  pivot_longer(
-    cols = c("sig_to_init", "sig_to_complete"),
-    names_to = "interval_type",
-    names_prefix = "sig_to_"
-  ) %>% 
-  ggplot(aes(x = value, y = patient_id)) +
-  geom_point(aes(shape = factor(interval_type), colour = factor(Reviewer))) +
-  geom_linerange(aes(xmin = vmin, xmax=vmax, color=factor(Reviewer))) +
-  geom_linerange(aes(xmin = 0, xmax=vmin, color=factor(Reviewer)), alpha = 0.2) +
-  scale_x_sqrt()
-```
-
-## Reviewer bias?
-
-```{r exploratory-reviewer-bias, eval=FALSE}
-t_all %>% 
-  pivot_longer(cols = c(sig_to_init, init_to_complete), names_to = "varname") %>% 
-  filter(cancer_type=="Lung") %>% 
-  group_by(Reviewer, varname) %>% 
-  summarise(
-    mean = mean(value),
-    sd = sd(value),
-    median = median(value),
-    q1 = quantile(value, 0.25),
-    q3 = quantile(value, 0.75)
-  ) %>% 
-  arrange(desc(varname)) %>% 
-  kable()
-
-r_si <- t_all %>% filter(cancer_type=="Lung",
-                         Reviewer=="MRR") %>% pull(sig_to_init)
-r_ic <- t_all %>% filter(cancer_type=="Lung",
-                         Reviewer=="MRR") %>% pull(init_to_complete)
-s_si <- t_all %>% filter(cancer_type=="Lung",
-                         Reviewer=="SK") %>% pull(sig_to_init)
-s_ic <- t_all %>% filter(cancer_type=="Lung",
-                         Reviewer=="SK") %>% pull(init_to_complete)
-
-t_all %>% 
-  filter(cancer_type=="Lung") %>% 
-  ggplot(aes(init_to_complete, factor(Reviewer))) +
-  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), color = "#777777") +
-  geom_jitter(width = 0, height=0.25, alpha = 0.4) +
-  scale_x_sqrt()
-
-t_all %>% 
-  filter(cancer_type=="Lung") %>% 
-  ggplot(aes(sig_to_init, factor(Reviewer))) +
-  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), color = "#777777") +
-  geom_jitter(width = 0, height=0.25, alpha = 0.4) +
-  scale_x_sqrt()
-
-wilcox.test(r_si, s_si)
-wilcox.test(r_ic, s_ic)
 ```
