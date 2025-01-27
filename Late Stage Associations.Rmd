@@ -321,6 +321,20 @@ percentage_text <- function(numerator, denominator) {
   return(final_text)
 }
 
+
+
+pct_ci_text <- function(numerator, denominator) {
+  low = binconf(numerator, denominator)[,"Lower"]
+  upp = binconf(numerator, denominator)[,"Upper"]
+  ptext <- as.character(round(numerator / denominator * 100, 1))
+  ltext <- as.character(round(low * 100, 1))
+  utext <- as.character(round(upp * 100, 1))
+      
+  final_text <- paste0(ptext, "% (", ltext, "-", utext, ")")
+  return(final_text)
+}
+
+
 q123ms <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
   median = ~quantile(.x, 0.5, na.rm = TRUE),
@@ -362,7 +376,7 @@ compr_age <- all_data %>%
   mutate(Characteristic = "Age")
 ```
 
-```{r final-all-descr-table}
+```{r kable-descr-comprehensive}
 compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   all_data %>% 
     group_by(site, cancer_type) %>% 
@@ -450,16 +464,13 @@ va_population_ci <- all_data %>%
   group_by(site, cancer_type) %>% 
   count(Sex) %>% 
   mutate(d = sum(n)) %>% 
-  filter(Sex=="M") %>% 
   mutate(
-    Percentage = percentage_text(n, d),
-    wilson.poi = binconf(n, d)[,"PointEst"],
-    wilson.low = binconf(n, d)[,"Lower"],
-    wilson.upp = binconf(n, d)[,"Upper"],
-    Characteristic = "Sex M",
+    Fact = "Sex",
+    Val = Sex,
     .keep = "unused"
-  ) %>% 
-  select(!Sex)
+  )
+
+
 
 chart_rev_confint <- bind_rows(
   # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
@@ -483,14 +494,17 @@ chart_rev_confint <- bind_rows(
   reviewed_all %>% group_by(site, cancer_type) %>% 
     filter(!is.na(cancer_dx_considered)) %>% count(site, cancer_type, cancer_dx_considered) %>%
     mutate(d = sum(n), Fact = "Ca considered", Val=as.character(cancer_dx_considered)) %>%  
-    select(site, cancer_type, Fact, Val, n, d)
+    select(site, cancer_type, Fact, Val, n, d),
+  va_population_ci
 ) %>% 
   mutate(
     Percentage = percentage_text(n, d),
+    P_CI_short = pct_ci_text(n, d),
     wilson.poi = binconf(n, d)[,"PointEst"],
     wilson.low = binconf(n, d)[,"Lower"],
     wilson.upp = binconf(n, d)[,"Upper"]
   ) %>% 
+
   filter(
     # Exclude a few rows because it is redundant to say 25% true, 75% false. Just
     # mention one of these %s.
@@ -500,18 +514,24 @@ chart_rev_confint <- bind_rows(
       (Fact == "Ca considered" & Val == "No")  # Assume Unsure = considered.
   ) %>% 
   unite(col=Characteristic, Fact, Val, sep=" ") %>% 
-  arrange(desc(site), desc(cancer_type), Characteristic) %>% 
-  bind_rows(va_population_ci)
+  arrange(desc(site), desc(cancer_type), Characteristic)
 ```
 
-```{r kable-ci}
+```{r kable-descr-reviews}
 chart_rev_confint %>%
-  select(!c(n, d, wilson.poi)) %>% 
+  select(site, cancer_type, Characteristic, Percentage, wilson.low, wilson.upp) %>% 
   mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
   unite(wilson.low, wilson.upp, col="Wilson_CI", sep = "-") %>% 
   unite(col=Percent_CI, Percentage, Wilson_CI, sep = " ") %>% 
   pivot_wider(names_from = c(site, cancer_type), values_from = Percent_CI) %>% 
   kable()
+# print the detailed one now.
+
+review_ci_concise <- chart_rev_confint %>%
+  select(site, cancer_type, Characteristic, P_CI_short) %>% 
+  pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short)
+# We do bind_rows()  on this later.
+
 ```
 
 ```{r plot-ci}
@@ -551,7 +571,7 @@ median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 ```
 
-```{r table-descriptives-continuous-strat, message=FALSE}
+```{r kable-descriptives-allvars-strat, message=FALSE}
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
   summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123ms)) %>% 
@@ -573,8 +593,20 @@ reviewed_all %>%
     values_from = median_q1_q3
   ) %>% 
   relocate(variable, VA_Lung, VA_Colon, Geisinger_Lung, Geisinger_Colon) %>% 
+  rename(Characteristic = variable) %>%
+  bind_rows(review_ci_concise) %>% 
   kable()
 ```
+
+
+
+
+
+
+
+
+
+
 
 ## Plot: time with custom breaks
 
