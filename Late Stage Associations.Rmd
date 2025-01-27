@@ -445,9 +445,7 @@ Purely descriptive stats of the following:
 - init to complete time, histogram and quartiles
 - age, histogram
 
-## Table: categoricals
-
-```{r review-table-ci}
+```{r generate-table-ci}
 va_population_ci <- all_data %>%
   group_by(site, cancer_type) %>% 
   count(Sex) %>% 
@@ -506,7 +504,7 @@ chart_rev_confint <- bind_rows(
   bind_rows(va_population_ci)
 ```
 
-```{r presentation-ci}
+```{r kable-ci}
 chart_rev_confint %>%
   select(!c(n, d, wilson.poi)) %>% 
   mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
@@ -516,7 +514,7 @@ chart_rev_confint %>%
   kable()
 ```
 
-```{r plot-confint}
+```{r plot-ci}
 chart_rev_confint %>% 
   ggplot(aes(x = wilson.poi, y = Characteristic, colour = site)) +
   facet_grid(rows=vars(cancer_type)) +
@@ -525,11 +523,6 @@ chart_rev_confint %>%
 ```
 
 \newpage
-
-
-
-
-## Table: quartiles of age and times
 
 ```{r functions-continuous-vars}
 median_text_scalar <- function(m, q1, q3){
