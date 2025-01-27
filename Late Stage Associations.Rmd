@@ -940,7 +940,6 @@ reviewed_all %>%
 ```
 
 ```{r correlations-full-table}
-
 spear.unpack <- function(vec1, vec2, func) {
   if (sum(is.na(vec1)) == length(vec1)) {
      return(NA)
@@ -948,22 +947,52 @@ spear.unpack <- function(vec1, vec2, func) {
   if (sum(is.na(vec2)) == length(vec2)) {
      return(NA)
   }
-  
   result <- cor.test(vec1, vec2, method="spearman")
-
-    return(func(result))
-
-  
+  return(func(result))
 }
-
 
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
   filter(signal_present=="Yes", MOD_definite) %>% 
   summarise(
-    Age_t12_p = spear.unpack(Age, init_to_completion, p)
+    Age_t12_p = spear.unpack(Age, signal_to_init, p),
+    Age_t12_r = spear.unpack(Age, signal_to_init, r),
+    Age_t23_p = spear.unpack(Age, init_to_completion, p),
+    Age_t23_r = spear.unpack(Age, init_to_completion, r),
+    t12_t23_p = spear.unpack(signal_to_init, init_to_completion, p),
+    t12_t23_r = spear.unpack(signal_to_init, init_to_completion, r),
   )
 ```
+
+```{r ggally-LONG, message=FALSE, warning=FALSE}
+library(GGally)
+
+reviewed_all %>% 
+  filter(cancer_type=="Lung", site=="VA") %>% 
+  select(MOD_definite, signal_to_init, init_to_completion) %>% 
+  ggpairs() +
+  labs(title="VA Lung")
+
+reviewed_all %>% 
+  filter(cancer_type=="Colon", site=="VA") %>% 
+  select(MOD_definite, signal_to_init, init_to_completion) %>% 
+  ggpairs() +
+  labs(title="VA Colon")
+
+reviewed_all %>% 
+  filter(cancer_type=="Lung", site=="Geisinger") %>% 
+  select(Age, Sex, MOD_definite, signal_to_init, init_to_completion) %>% 
+  ggpairs() +
+  labs(title="Geisinger Lung")
+
+reviewed_all %>% 
+  filter(cancer_type=="Colon", site=="Geisinger") %>% 
+  select(Age, Sex, MOD_definite, signal_to_init, init_to_completion) %>% 
+  ggpairs() +
+  labs(title="Geisinger Colon")
+```
+
+
 
 ```{r ia-test, eval=FALSE}
 sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
@@ -972,6 +1001,8 @@ sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
 # filter NA 
 # stratify
 ```
+
+
 
 
 ```{r ia-plot, eval=FALSE}
