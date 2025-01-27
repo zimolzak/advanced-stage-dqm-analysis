@@ -141,13 +141,6 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
     Age = PatientAgeCapped
   ) %>% 
   relocate(site, cancer_type, Sex, Race, Age, Stage)
-
-colon <- all_data %>% filter(cancer_type == "Colon")
-lung <- all_data %>% filter(cancer_type == "Lung")
-
-# yes, we kind of use these later.
-# under "Associations: comprehensive data"
-# FIXME_maybe - do it as group_by in future.
 ```
 
 ```{r dim-col-comprehensive, echo=TRUE}
@@ -612,8 +605,6 @@ year_breaks_custom <- c(c(0, 0.25, 0.5), seq(1, 17, 1))
 day_breaks_custom <- year_breaks_custom * 365
 ```
 
-
-
 What we want:
 
 > temporal distribution of MODs, with regard to diagnosis (i.e. how many occurred <3 months prior to appropriate evaluation/diagnosis, vs 3–6 months, 6–12 mos, etc)....
@@ -623,8 +614,6 @@ year_breaks_ed <- c(0, 0.25, 0.5, 1, 2, 3 ,4, 20)
 month_breaks_ed <- year_breaks_ed * 12
 day_breaks_ed <- year_breaks_ed * 365
 ```
-
-
 
 ```{r boxplot-s2c}
 reviewed_all %>% 
@@ -662,9 +651,12 @@ reviewed_all %>%
 
 
 
-# Associations: comprehensive data. FIXME more concise.
+# Associations: comprehensive data
 
 ```{r construct-pvals}
+colon <- all_data %>% filter(cancer_type == "Colon")
+lung <- all_data %>% filter(cancer_type == "Lung")
+
 tab_colon_sex <- table(colon$Sex, colon$Stage)
 chi_colon_sex <- chisq.test(tab_colon_sex)
 p_colon_sex <- chi_colon_sex$p.value
@@ -760,7 +752,9 @@ all_data %>%
   select(cancer_type, Stage, n, Age_mean_SD, P_value) %>%   
   # drops Age_quartiles because it wasn't very informative
   kable()
+```
 
+```{r text-prep}
 mean_ages_lung <- all_data %>% 
   filter(cancer_type=="Lung") %>% 
   group_by(Stage) %>% 
@@ -786,7 +780,9 @@ No difference in age between colon advanced and colon early. Lung advanced skews
 
 # Associations: chart review
 
-## Table: stratified $P$ values (gender vs. time)
+## Time vs. gender
+
+$P$ values here are by Wilcoxon.
 
 ```{r good-wilcox, message=FALSE, warning=FALSE}
 reviewed_all %>%
@@ -801,28 +797,6 @@ reviewed_all %>%
   ) %>% 
   kable()
 ```
-
-## Initiation time vs. gender plot
-
-```{r init-gender, message=FALSE, warning=FALSE}
-reviewed_all %>% 
-  filter(!is.na(Sex)) %>% 
-  ggplot(aes(signal_to_init)) +
-  geom_histogram() +
-  facet_grid(rows=vars(Sex), cols = vars(site, cancer_type))
-```
-
-## Completion time vs. gender plot
-
-```{r completion-gender, message=FALSE, warning=FALSE}
-reviewed_all %>% 
-  filter(!is.na(Sex)) %>% 
-  ggplot(aes(init_to_completion)) +
-  geom_histogram() +
-  facet_grid(rows=vars(Sex), cols = vars(site, cancer_type))
-```
-
-## Table: Time intervals vs. gender
 
 ```{r time-gender-table, message=FALSE}
 reviewed_all %>% 
@@ -843,7 +817,7 @@ reviewed_all %>%
 
 
 
-## Multiple correlations (continuous vs. continuous)
+## Age vs. times $\rho$ coefficients
 
 ```{r helper-fns}
 p <- function(spear){
@@ -854,14 +828,6 @@ r <- function(spear){
   return(round(spear$estimate, 3))
 }
 ```
-
-- [x] Get rid of all the `eval=FALSE`
-
-- [x] Do something with `cor.test()` like the way we used `wilcox.test()` with a formula. See line 854 or so, above. Here is the function we will apply using `across()`:
-
-`~ wilcox.test(. ~ Sex)$p.value`
-
-...but probably need to use a `list()` or something, because extracting both $P$ and $\rho$.
 
 ```{r size-of-filtered-subset}
 reviewed_all %>% 
@@ -928,12 +894,13 @@ reviewed_all %>%
 
 ## Initiation time vs. age
 
-```{r ia-plot, warning=FALSE}
+```{r ia-plot, message=FALSE, warning=FALSE}
 reviewed_all %>% 
-  filter(signal_present=="Yes", MOD_definite) %>% 
+  filter(signal_present=="Yes", MOD_definite, site!="VA") %>% 
 ggplot(aes(x=Age, y=signal_to_init)) +
   geom_jitter(alpha=0.5) +
-  scale_y_log10() +
+  geom_smooth() +
+  scale_y_sqrt() +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
@@ -941,9 +908,9 @@ Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only
 
 ## Completion time vs. age
 
-```{r completion-age-plots, warning=FALSE}
+```{r completion-age-plots, message=FALSE, warning=FALSE}
 reviewed_all %>% 
-  filter(signal_present=="Yes", MOD_definite) %>% 
+  filter(signal_present=="Yes", MOD_definite, site!="VA") %>% 
 ggplot(aes(x=Age, y=init_to_completion)) +
   geom_jitter(alpha=0.5) +
   geom_smooth() +
