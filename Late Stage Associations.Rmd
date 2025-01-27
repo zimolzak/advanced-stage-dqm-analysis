@@ -694,8 +694,6 @@ wilc_lung_age <- wilcox.test(
 p_lung_age <- wilc_lung_age$p.value
 ```
 
-## Table: Advanced stage percentages vs race, sex
-
 All $P$ values are by $\chi^2$.
 
 ```{r categorical-assoc}
@@ -736,49 +734,16 @@ assoc %>%
   kable()
 ```
 
-## Colon stage/age plot
+## Age vs. advanced
 
-```{r plot-colon-age, message=FALSE, warning=FALSE}
-ggplot(
-  data = colon,
-  aes(
-    Age,
-    fill = Stage,
-    color = Stage
-  )
-) +
+```{r plot-age-facetted, message=FALSE, warning=FALSE}
+ggplot(all_data, aes(Age, fill=Stage, color=Stage)) +
   geom_density(alpha=0.3) +
-  xlim(20, 100)
-
-ggplot(data = colon, aes(Age)) +
-  geom_histogram() +
-  facet_grid(rows="Stage") +
+  facet_grid(rows=vars(cancer_type)  ) +
   xlim(20, 100)
 ```
 
-## Lung stage/age plot
-
-```{r plot-lung-age, message=FALSE, warning=FALSE}
-ggplot(
-  data = lung,
-  aes(
-    Age,
-    fill = Stage,
-    color = Stage
-  )
-) +
-  geom_density(alpha=0.3) +
-  xlim(20, 100)
-
-ggplot(data = lung, aes(Age)) +
-  geom_histogram() +
-  facet_grid(rows="Stage") +
-  xlim(20, 100)
-```
-
-## Table: Age quartiles vs. advanced-stage status
-
-This goes along with the density plots earlier. All $P$ values are by Wilcoxon.
+All $P$ values are by Wilcoxon.
 
 ```{r age-assoc, message=FALSE}
 all_data %>% 
@@ -792,9 +757,29 @@ all_data %>%
     cancer_type == "Colon" ~ round(p_colon_age, 3),
     TRUE ~ p_lung_age  # Trying to show very low P without rounding.
   )) %>% 
-  relocate(n, .after = Stage) %>% 
+  select(cancer_type, Stage, n, Age_mean_SD, P_value) %>%   
+  # drops Age_quartiles because it wasn't very informative
   kable()
+
+mean_ages_lung <- all_data %>% 
+  filter(cancer_type=="Lung") %>% 
+  group_by(Stage) %>% 
+  summarise(m=mean(Age)) %>% 
+  arrange(Stage)
+
+r2 <- function(n) {
+  d <- 2
+  r <- round(n, d)
+  f <- format(r, nsmall = d)
+  return(f)
+}
+
+mala <- mean_ages_lung[1,] %>% pull(m)
+mall <- mean_ages_lung[2,] %>% pull(m)
+maldiff <- abs(mala - mall)
 ```
+
+No difference in age between colon advanced and colon early. Lung advanced skews slightly earlier than lung early (`r r2(mala)` vs. `r r2(mall)` years, difference of `r r2(maldiff)`).
 
 
 
