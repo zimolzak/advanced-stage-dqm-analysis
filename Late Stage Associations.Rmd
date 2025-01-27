@@ -271,6 +271,8 @@ dim(reviewed_all)
 colnames(reviewed_all)
 ```
 
+\newpage
+
 ## Double-checking VA MOD coding/conversion
 
 Original character in columns. New Boolean in rows.
@@ -543,7 +545,7 @@ day_breaks_custom <- year_breaks_custom * 365
 
 ```
 
-```{r fig-binning-custom-histo}
+```{r fig-binning-custom-histo, warning=FALSE}
 reviewed_all %>% 
   ggplot(aes(x=signal_to_completion)) +
   geom_histogram(breaks = day_breaks_custom) +
@@ -632,9 +634,10 @@ reviewed_all %>%
 
 
 
-# Associations: comprehensive data
+# Comprehensive associations: Colon
 
-## Colon stage/age plot
+## Table: Sex vs stage
+
 
 ```{r test-colon-sex, echo=TRUE}
 tab_colon_sex <- table(colon$Sex, colon$Stage)
@@ -646,6 +649,8 @@ chi_colon_sex
 p_colon_sex <- chi_colon_sex$p.value
 ```
 
+## Table: Race vs stage
+
 ```{r test-colon-race, include=FALSE}
 tab_colon_race <- table(colon$Race, colon$Stage)
 
@@ -655,6 +660,8 @@ chi_colon_race <- chisq.test(tab_colon_race)
 chi_colon_race
 p_colon_race <- chi_colon_race$p.value
 ```
+
+## Colon stage/age plot
 
 ```{r plot-colon-age, message=FALSE, warning=FALSE}
 ggplot(
@@ -684,7 +691,9 @@ wilc_colon_age
 p_colon_age <- wilc_colon_age$p.value
 ```
 
-## Lung stage/age plot
+# Comprehensive associations: Lung
+
+## Sex vs Stage
 
 ```{r test-lung-sex, include=FALSE}
 tab_lung_sex <- table(lung$Sex, lung$Stage)
@@ -696,6 +705,8 @@ chi_lung_sex
 p_lung_sex <- chi_lung_sex$p.value
 ```
 
+## Race vs stage
+
 ```{r test-lung-race, include=FALSE}
 tab_lung_race <- table(lung$Race, lung$Stage)
 
@@ -705,6 +716,8 @@ chi_lung_race <- chisq.test(tab_lung_race)
 chi_lung_race
 p_lung_race <- chi_lung_race$p.value
 ```
+
+## Lung stage/age plot
 
 ```{r plot-lung-age, message=FALSE, warning=FALSE}
 ggplot(
@@ -738,6 +751,9 @@ t.test(
   lung %>% filter(Stage == "Early") %>% pull(Age)
 )
 ```
+
+
+# Comprehensive associations: compbined
 
 ## Table: Advanced stage percentages, by demographics
 
@@ -781,6 +797,8 @@ assoc %>%
 ```
 
 ## Table: Age, by cancer type and advanced-stage status
+
+This goes along with the density plots earlier.
 
 ```{r age-assoc, message=FALSE}
 all_data %>% 
@@ -849,7 +867,7 @@ It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, 
 
 ## Table: stratified $P$ values (gender)
 
-```{r good-wilcox}
+```{r good-wilcox, warning=FALSE}
 reviewed_all %>%
   group_by(site, cancer_type) %>%
   filter(!is.na(signal_to_init), !is.na(Sex)) %>%
@@ -917,8 +935,6 @@ r <- function(spear){
   return(round(spear$estimate, 3))
 }
 ```
-
-Left off here. *leftoff*
 
 - [ ] Get rid of all the `eval=FALSE`
 
@@ -1174,10 +1190,7 @@ Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only
 
 ## Completion time vs. age (multiple plots)
 
-
-
-```{r completion-age-plots}
-
+```{r completion-age-plots, warning=FALSE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite) %>% 
 ggplot(aes(x=Age, y=init_to_completion)) +
@@ -1197,10 +1210,7 @@ ggplot(aes(x=Age, y=init_to_completion)) +
 
 ## Initiation time vs. completion time (plots are too wacky)
 
-
-
-```{r init-completion-wacky-plots}
-
+```{r init-completion-wacky-plots, warning=FALSE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite) %>% 
 ggplot(aes(x=signal_to_init, y=init_to_completion)) +
@@ -1210,24 +1220,4 @@ ggplot(aes(x=signal_to_init, y=init_to_completion)) +
   scale_x_sqrt() +
   coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
-
-
-
-
-
-
-
-# smooth
-# density2d
-
-# ggplot(temporal, aes(x=sig_to_init + 0.1, y=init_to_complete + 0.1)) +
-#   geom_density_2d() + geom_jitter(alpha=0.5) +
-#   scale_y_log10() + scale_x_log10()
-# 
-# ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
-#   geom_jitter(alpha=0.5) +
-#   geom_smooth() +
-#   coord_cartesian( xlim=c(0, 365*2), ylim=c(0,1200))+
-#   scale_x_continuous(breaks = seq(0,2000,365)) +
-#   scale_y_continuous(breaks = seq(0,2000,365))
 ```
