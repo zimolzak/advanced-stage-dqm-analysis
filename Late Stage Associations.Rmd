@@ -332,13 +332,16 @@ q123ms <- list(
 
 ## VA sex, race, age
 
-```{r va-demographics}
+```{r va-demographics, message=FALSE}
 all_data %>%
   group_by(site, cancer_type) %>% 
   count(Sex) %>% 
   mutate(d = sum(n)) %>% 
   mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
   filter(Sex == "M") %>% 
+  pivot_wider(names_from = cancer_type, values_from = Percent) %>% 
+  mutate(Characteristic = "Sex") %>% 
+  rename(Level = Sex) %>% 
   kable()
 
 all_data %>%
@@ -347,14 +350,25 @@ all_data %>%
   mutate(d = sum(n)) %>% 
   arrange(desc(cancer_type), desc(n)) %>% 
   mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
+  pivot_wider(names_from = cancer_type, values_from = Percent) %>% 
+  mutate(Characteristic = "Race") %>% 
+  rename(Level = Race) %>% 
   kable()
 
 all_data %>% 
   ggplot(aes(x=Age)) +
-  geom_histogram(binwidth = 2) # FIXME - facet
+  geom_histogram(binwidth = 2) +
+  facet_grid(rows=vars(cancer_type))
 
-all_data %>%   # FIXME - group by
+all_data %>%
+  group_by(site, cancer_type) %>% 
   summarise(across(Age, q123ms)) %>% 
+  unite(col = quartiles, c(Age_median, Age_q1), sep = " (") %>% 
+  unite(col = quartiles, c(quartiles, Age_q3), sep = " - ") %>% 
+  mutate(quartiles = paste0(quartiles, ")")) %>% 
+  select(site, cancer_type, quartiles) %>% 
+  pivot_wider(names_from = cancer_type, values_from = quartiles) %>% 
+  mutate(Characteristic = "Age") %>% 
   kable()
 ```
 
