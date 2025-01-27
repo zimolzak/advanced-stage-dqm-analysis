@@ -904,7 +904,7 @@ reviewed_all %>%
 
 
 
-# FIXME - Associations: continuous vs. continuous
+# Associations: continuous vs. continuous
 
 ## Initiation time vs. age plot
 
@@ -922,7 +922,7 @@ Left off here. *leftoff*
 
 - [ ] Get rid of all the `eval=FALSE`
 
-- [ ] Do something with `cor.test()` like the way we used `wilcox.test()` with a formula. See line 854 or so, above. Here is the function we will apply using `across()`:
+- [x] Do something with `cor.test()` like the way we used `wilcox.test()` with a formula. See line 854 or so, above. Here is the function we will apply using `across()`:
 
 `~ wilcox.test(. ~ Sex)$p.value`
 
@@ -1021,28 +1021,23 @@ reviewed_all %>%
 
 
 
-```{r ia-test, eval=FALSE}
-sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
-# FIXME: 
-# make it use reviewed_all
-# filter NA 
-# stratify
-```
 
 
 
 
-```{r ia-plot, eval=FALSE}
-ggplot(temporal, aes(x=Age, y=sig_to_init)) +
+```{r ia-plot, warning=FALSE}
+reviewed_all %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+ggplot(aes(x=Age, y=signal_to_init)) +
   geom_jitter(alpha=0.5) +
-  scale_y_log10()
-# FIXME (reviewed_all, filter, stratify)
+  scale_y_log10() +
+  facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
 
 
 
-# DIGRESSION: Exploratory analysis
+# FIXME - Digression: Exploratory analysis
 
 ### Sanity check
 
@@ -1179,59 +1174,60 @@ Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only
 
 ## Completion time vs. age (multiple plots)
 
-```{r ca, eval=FALSE}
-sp_ca <- cor.test(temporal$Age, temporal$init_to_complete, method = "spearman")  # stat significant
-# FIXME: same as other cor.test. (reviewed_all, filter, stratify)
-```
 
-```{r completion-age-plots, eval=FALSE}
-ggplot(temporal, aes(x=Age, y=init_to_complete)) +
-  geom_jitter(alpha=0.5) +
-  xlim(40, 90) +
-  scale_y_log10()
-ggplot(temporal, aes(x=Age, y=init_to_complete)) +
-  geom_bin_2d(bins=10) +
-  coord_cartesian(xlim=c(40,90)) +
-  scale_y_continuous(breaks = seq(0,6000, 365*2))
-ggplot(temporal, aes(x=Age, y=init_to_complete)) +
+
+```{r completion-age-plots}
+
+reviewed_all %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+ggplot(aes(x=Age, y=init_to_completion)) +
   geom_jitter(alpha=0.5) +
   geom_smooth() +
-  coord_cartesian(xlim=c(40,90), ylim=c(-10, 600)) +   # probably always use coord_ with _smooth
-  scale_y_continuous(breaks = seq(0,6000, 365), minor_breaks = seq(0, 6000, 365/12))
-ggplot(temporal, aes(x=Age, y=init_to_complete)) +
-  geom_jitter(alpha=0.5) +
-  geom_smooth() +
-  coord_cartesian(xlim=c(40,90), ylim=c(-10, 120)) +
-  scale_y_continuous(breaks = seq(0,6000, 30), minor_breaks = seq(0, 6000, 30/4))
+  scale_y_sqrt() +
+  coord_cartesian(ylim=c(0,2000)) +
+  facet_grid(rows=vars(cancer_type), cols=vars(site))
 
-# FIXME (reviewed_all, filter, stratify)
-# yes this applies to these plots.
+
+
+
+
 ```
 
 \newpage
 
 ## Initiation time vs. completion time (plots are too wacky)
 
-```{r ic, eval=FALSE}
-sp_ic <- cor.test(temporal$sig_to_init, temporal$init_to_complete, method = "spearman")  # stat significant
-# FIXME (reviewed_all, filter, stratify)
-```
 
-```{r init-completion-wacky-plots, eval=FALSE}
-ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
+
+```{r init-completion-wacky-plots}
+
+reviewed_all %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+ggplot(aes(x=signal_to_init, y=init_to_completion)) +
   geom_jitter(alpha=0.5) +
-  scale_y_log10() + scale_x_log10()
-ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
-  geom_hex(bins=10) +
-  scale_y_log10() + scale_x_log10()
-ggplot(temporal, aes(x=sig_to_init + 0.1, y=init_to_complete + 0.1)) +
-  geom_density_2d() + geom_jitter(alpha=0.5) +
-  scale_y_log10() + scale_x_log10()
-ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
-  geom_jitter(alpha=0.5) +
-  geom_smooth() +
-  coord_cartesian( xlim=c(0, 365*2), ylim=c(0,1200))+
-  scale_x_continuous(breaks = seq(0,2000,365)) +
-  scale_y_continuous(breaks = seq(0,2000,365))
-# FIXME (reviewed_all, filter, stratify)
+  geom_density_2d() +
+  scale_y_sqrt() +
+  scale_x_sqrt() +
+  coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
+  facet_grid(rows=vars(cancer_type), cols=vars(site))
+
+
+
+
+
+
+
+# smooth
+# density2d
+
+# ggplot(temporal, aes(x=sig_to_init + 0.1, y=init_to_complete + 0.1)) +
+#   geom_density_2d() + geom_jitter(alpha=0.5) +
+#   scale_y_log10() + scale_x_log10()
+# 
+# ggplot(temporal, aes(x=sig_to_init, y=init_to_complete)) +
+#   geom_jitter(alpha=0.5) +
+#   geom_smooth() +
+#   coord_cartesian( xlim=c(0, 365*2), ylim=c(0,1200))+
+#   scale_x_continuous(breaks = seq(0,2000,365)) +
+#   scale_y_continuous(breaks = seq(0,2000,365))
 ```
