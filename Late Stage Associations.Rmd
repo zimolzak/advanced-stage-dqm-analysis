@@ -939,7 +939,8 @@ reviewed_all %>%
   kable()
 ```
 
-```{r correlations-full-table}
+```{r correlations-full-table, message=FALSE, warning=FALSE}
+# warnings are about P value with ties.
 spear.unpack <- function(vec1, vec2, func) {
   if (sum(is.na(vec1)) == length(vec1)) {
      return(NA)
@@ -961,10 +962,36 @@ reviewed_all %>%
     Age_t23_r = spear.unpack(Age, init_to_completion, r),
     t12_t23_p = spear.unpack(signal_to_init, init_to_completion, p),
     t12_t23_r = spear.unpack(signal_to_init, init_to_completion, r),
-  )
+  ) %>% 
+  pivot_longer(
+    cols = ends_with(c("_p", "_r")),
+    names_to = c("var1", "var2", "stat"),
+    names_sep = "_"
+  ) %>%
+  arrange(desc(site), desc(cancer_type), desc(stat)) %>% 
+  pivot_wider(names_from = c(site, cancer_type, stat), values_from = value) %>% 
+  
+  # Everything below here is just making it look neater. No major calculations.
+  
+  mutate(across(ends_with(c("_p")), ~ if_else(.<0.05, "*", ""))) %>% 
+  mutate(across(ends_with(c("_r")), ~ as.character(.))) %>% 
+  mutate(across(starts_with("VA_"), ~ if_else(is.na(.), "", .) )) %>% 
+  unite("VA_Lung", starts_with("VA_L"), sep=" ") %>% 
+  unite("VA_Colon", starts_with("VA_C"), sep=" ") %>% 
+  unite("Geisinger_Lung", starts_with("Geisinger_Lung"), sep=" ") %>% 
+  unite("Geisinger_Colon", starts_with("Geisinger_Colon"), sep=" ") %>% 
+  mutate(across(
+    c(var1, var2),
+    ~ case_when(
+      . == "t12" ~ "Signal to initation",
+      . == "t23" ~ "Initation to completion",
+      .default = .
+    )
+  )) %>% 
+  kable()
 ```
 
-```{r ggally-LONG, message=FALSE, warning=FALSE}
+```{r ggally-LONG, eval=FALSE, echo=TRUE, message=FALSE, warning=FALSE}
 library(GGally)
 
 reviewed_all %>% 
