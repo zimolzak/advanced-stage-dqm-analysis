@@ -449,16 +449,6 @@ all_data %>%
 
 # Descriptives: chart review 
 
-Purely descriptive stats of the following:
-
-- MOD (percent)
-- sex (%)
-- Cancer signal preceding, %
-- Cancer considered, %
-- signal to workup init, histogram and quartiles
-- init to complete time, histogram and quartiles
-- age, histogram
-
 ```{r generate-table-ci}
 va_population_ci <- all_data %>%
   group_by(site, cancer_type) %>% 
@@ -469,8 +459,6 @@ va_population_ci <- all_data %>%
     Val = Sex,
     .keep = "unused"
   )
-
-
 
 chart_rev_confint <- bind_rows(
   # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
@@ -598,15 +586,23 @@ reviewed_all %>%
   kable()
 ```
 
+```{r descrip-facet-age, warning=FALSE}
+ggplot(reviewed_all, aes(x=Age)) +
+  geom_histogram(binwidth = 2) +
+  facet_grid(vars(site, cancer_type))
+```
 
+```{r descrip-facet-s2i, warning=FALSE}
+ggplot(reviewed_all, aes(x=signal_to_init)) +
+  geom_histogram(bins=30) +
+  facet_grid(vars(site, cancer_type))
+```
 
-
-
-
-
-
-
-
+```{r descrip-facet-i2c, warning=FALSE}
+ggplot(reviewed_all, aes(x=init_to_completion)) +
+  geom_histogram(bins=30) +
+  facet_grid(vars(site, cancer_type))
+```
 
 ## Plot: time with custom breaks
 
@@ -626,28 +622,6 @@ reviewed_all %>%
   geom_histogram(breaks = day_breaks_custom) +
   scale_x_continuous(breaks=seq(0, 6000, 365*2))
 ```
-
-## Plots: age and times
-
-```{r descrip-facet-age, warning=FALSE}
-ggplot(reviewed_all, aes(x=Age)) +
-  geom_histogram(binwidth = 2) +
-  facet_grid(vars(site, cancer_type))
-```
-
-```{r descrip-facet-s2i, warning=FALSE}
-ggplot(reviewed_all, aes(x=signal_to_init)) +
-  geom_histogram(bins=30) +
-  facet_grid(vars(site, cancer_type))
-```
-
-```{r descrip-facet-i2c, warning=FALSE}
-ggplot(reviewed_all, aes(x=init_to_completion)) +
-  geom_histogram(bins=30) +
-  facet_grid(vars(site, cancer_type))
-```
-
-## Plot and table: time with subset and capped
 
 What we want:
 
