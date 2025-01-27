@@ -753,7 +753,7 @@ t.test(
 ```
 
 
-# Comprehensive associations: compbined
+# Comprehensive associations: combined
 
 ## Table: Advanced stage percentages, by demographics
 
@@ -863,7 +863,7 @@ tribble(
 
 It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, but it's times 4 strata, so that's 8 tests. Best to have a Wilcoxon function for this table.
 
-# Associations: chart review
+# Associations: chart review (categorical vs. continuous)
 
 ## Table: stratified $P$ values (gender)
 
@@ -924,7 +924,7 @@ reviewed_all %>%
 
 # Associations: continuous vs. continuous
 
-## Initiation time vs. age plot
+## Multiple correlations
 
 ```{r helper-fns}
 p <- function(spear){
@@ -1007,6 +1007,71 @@ reviewed_all %>%
   kable()
 ```
 
+
+
+## Initiation time vs. age
+
+
+
+
+```{r ia-plot, warning=FALSE}
+reviewed_all %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+ggplot(aes(x=Age, y=signal_to_init)) +
+  geom_jitter(alpha=0.5) +
+  scale_y_log10() +
+  facet_grid(rows=vars(cancer_type), cols=vars(site))
+```
+
+
+
+
+
+
+Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only ever used to use lung! It ignored colon.
+
+## Completion time vs. age
+
+```{r completion-age-plots, warning=FALSE}
+reviewed_all %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+ggplot(aes(x=Age, y=init_to_completion)) +
+  geom_jitter(alpha=0.5) +
+  geom_smooth() +
+  scale_y_sqrt() +
+  coord_cartesian(ylim=c(0,2000)) +
+  facet_grid(rows=vars(cancer_type), cols=vars(site))
+
+
+
+
+
+```
+
+\newpage
+
+## Initiation time vs. completion time
+
+```{r init-completion-wacky-plots, warning=FALSE}
+reviewed_all %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+ggplot(aes(x=signal_to_init, y=init_to_completion)) +
+  geom_jitter(alpha=0.5) +
+  geom_density_2d() +
+  scale_y_sqrt() +
+  scale_x_sqrt() +
+  coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
+  facet_grid(rows=vars(cancer_type), cols=vars(site))
+```
+
+
+\newpage
+
+
+# FIXME - Digression: Exploratory analysis
+
+## GGally
+
 ```{r ggally-LONG, eval=FALSE, echo=TRUE, message=FALSE, warning=FALSE}
 library(GGally)
 
@@ -1036,26 +1101,7 @@ reviewed_all %>%
 ```
 
 
-
-
-
-
-
-```{r ia-plot, warning=FALSE}
-reviewed_all %>% 
-  filter(signal_present=="Yes", MOD_definite) %>% 
-ggplot(aes(x=Age, y=signal_to_init)) +
-  geom_jitter(alpha=0.5) +
-  scale_y_log10() +
-  facet_grid(rows=vars(cancer_type), cols=vars(site))
-```
-
-
-
-
-# FIXME - Digression: Exploratory analysis
-
-### Sanity check
+## Sanity check
 
 *Lesson:* Something weird about how cor.test handles NAs.
 
@@ -1067,7 +1113,7 @@ ggplot(aes(x=Age, y=signal_to_init)) +
 
 **Note to self!** Maybe (probably) I need to select only for those with red flag, meaning `signal_present = "Yes"`.
 
-### How can you get negative numbers?
+## How can you get negative numbers?
 
 Workup completed (exactly one year) *before* workup initiated?
 
@@ -1080,7 +1126,7 @@ temporal_gv %>%  # FIXME
 
 I suspect there are entry errors in year here.
 
-### Correct stats: Non-NA `cor.test`
+## Correct stats: Non-NA `cor.test`
 
 (Starting with correlation of `Age` and `sig_to_init`, like we did under "Sanity Check," above.)
 
@@ -1110,7 +1156,7 @@ tribble(
   kable()
 ```
 
-### Interval plot
+## Interval plot
 
 ```{r wacky-time-plot, eval=FALSE}
 t_all %>% 
@@ -1135,7 +1181,7 @@ t_all %>%
   scale_x_sqrt()
 ```
 
-### Reviewer bias?
+## Reviewer bias?
 
 ```{r exploratory-reviewer-bias, eval=FALSE}
 t_all %>% 
@@ -1177,47 +1223,4 @@ t_all %>%
 
 wilcox.test(r_si, s_si)
 wilcox.test(r_ic, s_ic)
-```
-
-\newpage
-
-
-
-
-# Associations: continuous vs. continuous
-
-Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only ever used to use lung! It ignored colon.
-
-## Completion time vs. age (multiple plots)
-
-```{r completion-age-plots, warning=FALSE}
-reviewed_all %>% 
-  filter(signal_present=="Yes", MOD_definite) %>% 
-ggplot(aes(x=Age, y=init_to_completion)) +
-  geom_jitter(alpha=0.5) +
-  geom_smooth() +
-  scale_y_sqrt() +
-  coord_cartesian(ylim=c(0,2000)) +
-  facet_grid(rows=vars(cancer_type), cols=vars(site))
-
-
-
-
-
-```
-
-\newpage
-
-## Initiation time vs. completion time (plots are too wacky)
-
-```{r init-completion-wacky-plots, warning=FALSE}
-reviewed_all %>% 
-  filter(signal_present=="Yes", MOD_definite) %>% 
-ggplot(aes(x=signal_to_init, y=init_to_completion)) +
-  geom_jitter(alpha=0.5) +
-  geom_density_2d() +
-  scale_y_sqrt() +
-  scale_x_sqrt() +
-  coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
-  facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
