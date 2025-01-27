@@ -18,10 +18,10 @@ output: pdf_document
     - [x] `lung_va_raw`
     - [x] `colon_va_raw`
     - [x] VA date data (re-export?)
-    - [ ] ...and sex, and age.
+    - [x] ...and sex, and age.
 - Analyses
     - [x] Oh dear, what if "date of completion" varies by reviewer.
-    - [ ] All the fix comments, related to Spearman's $\rho$ handling `NA` values, and stratifying by site and cancer type.
+    - [x] All the fix comments, related to Spearman's $\rho$ handling `NA` values, and stratifying by site and cancer type.
 
 ## Reviewers' list
 
@@ -32,7 +32,7 @@ output: pdf_document
     - [x] demographics (by health sys)
 - Manual review stats
     - description of temporal distribution
-        - [ ] Ed: bin them with breaks at like 3, 6, 12 months.
+        - [x] Ed: bin them with breaks at like 3, 6, 12 months.
     - temporal vs demographic (assoc)
     - temporal vs MOD (assoc)
     - really which reviewer wants assoc stats?
@@ -330,7 +330,7 @@ q123ms <- list(
 )
 ```
 
-## VA sex, age, race
+## VA sex, race, age
 
 ```{r va-demographics}
 all_data %>%
@@ -351,9 +351,9 @@ all_data %>%
 
 all_data %>% 
   ggplot(aes(x=Age)) +
-  geom_histogram(binwidth = 2)
+  geom_histogram(binwidth = 2) # FIXME - facet
 
-all_data %>% 
+all_data %>%   # FIXME - group by
   summarise(across(Age, q123ms)) %>% 
   kable()
 ```
@@ -431,7 +431,10 @@ Purely descriptive stats of the following:
 - init to complete time, histogram and quartiles
 - age, histogram
 
+## Table: categoricals
+
 ```{r review-table-ci}
+# FIXME - widen
 bind_rows(
   
   # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
@@ -480,6 +483,7 @@ bind_rows(
 
 
 
+## Table: quartiles of age and times
 
 ```{r functions-continuous-vars}
 median_text_scalar <- function(m, q1, q3){
@@ -534,6 +538,8 @@ reviewed_all %>%
   kable()
 ```
 
+## Plot: time with custom breaks
+
 ```{r constants}
 yearly = seq(0, 6000, 365)
 monthly = seq(0, 6000, 365/12)
@@ -555,7 +561,7 @@ reviewed_all %>%
 
 
 
-## Plots for all sites/cancers
+## Plots: age and times
 
 ```{r descrip-facet-age, warning=FALSE}
 ggplot(reviewed_all, aes(x=Age)) +
@@ -576,9 +582,9 @@ ggplot(reviewed_all, aes(x=init_to_completion)) +
   facet_grid(vars(site, cancer_type))
 ```
 
-### Binning
+## Plot and table: time with subset and capped
 
-We are trying to show the...
+What we want:
 
 > temporal distribution of MODs, with regard to diagnosis (i.e. how many occurred <3 months prior to appropriate evaluation/diagnosis, vs 3–6 months, 6–12 mos, etc)....
 
@@ -636,124 +642,39 @@ reviewed_all %>%
 
 # Associations: comprehensive data
 
-## Colon: Sex vs stage
-
-
-```{r test-colon-sex, echo=TRUE}
+```{r construct-pvals}
 tab_colon_sex <- table(colon$Sex, colon$Stage)
-
-fisher.test(tab_colon_sex)
-
 chi_colon_sex <- chisq.test(tab_colon_sex)
-chi_colon_sex
 p_colon_sex <- chi_colon_sex$p.value
-```
 
-## Colon Table: Race vs stage
-
-```{r test-colon-race, include=FALSE}
 tab_colon_race <- table(colon$Race, colon$Stage)
-
-fisher.test(tab_colon_race)
-
 chi_colon_race <- chisq.test(tab_colon_race)
-chi_colon_race
 p_colon_race <- chi_colon_race$p.value
-```
 
-## Colon stage/age plot
+tab_lung_sex <- table(lung$Sex, lung$Stage)
+chi_lung_sex <- chisq.test(tab_lung_sex)
+p_lung_sex <- chi_lung_sex$p.value
 
-```{r plot-colon-age, message=FALSE, warning=FALSE}
-ggplot(
-  data = colon,
-  aes(
-    Age,
-    fill = Stage,
-    color = Stage
-  )
-) +
-  geom_density(alpha=0.3) +
-  xlim(20, 100)
+tab_lung_race <- table(lung$Race, lung$Stage)
+chi_lung_race <- chisq.test(tab_lung_race)
+p_lung_race <- chi_lung_race$p.value
 
-ggplot(data = colon, aes(Age)) +
-  geom_histogram() +
-  facet_grid(rows="Stage") +
-  xlim(20, 100)
-```
-
-```{r test-colon-age, echo=TRUE}
 wilc_colon_age <- wilcox.test(
   colon %>% filter(Stage == "Advanced") %>% pull(Age),
   colon %>% filter(Stage == "Early") %>% pull(Age)
 )
-
-wilc_colon_age
 p_colon_age <- wilc_colon_age$p.value
-```
 
-## Lung: Sex vs Stage
-
-```{r test-lung-sex, include=FALSE}
-tab_lung_sex <- table(lung$Sex, lung$Stage)
-
-fisher.test(tab_lung_sex)
-
-chi_lung_sex <- chisq.test(tab_lung_sex)
-chi_lung_sex
-p_lung_sex <- chi_lung_sex$p.value
-```
-
-## Lung: Race vs stage
-
-```{r test-lung-race, include=FALSE}
-tab_lung_race <- table(lung$Race, lung$Stage)
-
-fisher.test(tab_lung_race, workspace = 2000000/4)
-
-chi_lung_race <- chisq.test(tab_lung_race)
-chi_lung_race
-p_lung_race <- chi_lung_race$p.value
-```
-
-## Lung stage/age plot
-
-```{r plot-lung-age, message=FALSE, warning=FALSE}
-ggplot(
-  data = lung,
-  aes(
-    Age,
-    fill = Stage,
-    color = Stage
-  )
-) +
-  geom_density(alpha=0.3) +
-  xlim(20, 100)
-
-ggplot(data = lung, aes(Age)) +
-  geom_histogram() +
-  facet_grid(rows="Stage") +
-  xlim(20, 100)
-```
-
-```{r test-lung-age, include=FALSE}
 wilc_lung_age <- wilcox.test(
   lung %>% filter(Stage == "Advanced") %>% pull(Age),
   lung %>% filter(Stage == "Early") %>% pull(Age)
 )
-
-wilc_lung_age
 p_lung_age <- wilc_lung_age$p.value
-
-t.test(
-  lung %>% filter(Stage == "Advanced") %>% pull(Age),
-  lung %>% filter(Stage == "Early") %>% pull(Age)
-)
 ```
 
+## Table: Advanced stage percentages vs race, sex
 
-# Associations: Comprehensive data, combined
-
-## Table: Advanced stage percentages, by demographics
+All $P$ values are by $\chi^2$.
 
 ```{r categorical-assoc}
 assoc_r <- all_data %>%
@@ -781,35 +702,80 @@ assoc <- bind_rows(assoc_r, assoc_s) %>%
     Colon_Advanced, Colon_Denom, Colon_Rate, p_colon,
     Lung_Advanced, Lung_Denom, Lung_Rate, p_lung
   )
-```
 
-```{r displayable}
 assoc %>% 
   arrange(Factor, desc(Lung_Denom)) %>% 
   unite(Colon_Advanced, Colon_Denom, col="Colon_VA", sep = " / ") %>% 
-  unite(Colon_VA, Colon_Rate, col="Colon_VA", sep=" (") %>% 
+  unite(Colon_VA, Colon_Rate, col="Colon_VA_advanced", sep=" (") %>% 
   unite(Lung_Advanced, Lung_Denom, col="Lung_VA", sep = " / ") %>% 
-  unite(Lung_VA, Lung_Rate, col="Lung_VA", sep=" (") %>% 
-  mutate(across(c(Colon_VA, Lung_VA), ~ paste0(.x, ")"))) %>%   # neat trick to add close paren
+  unite(Lung_VA, Lung_Rate, col="Lung_VA_advanced", sep=" (") %>% 
+  mutate(across(c(Colon_VA_advanced, Lung_VA_advanced), ~ paste0(.x, ")"))) %>%
+  # neat trick to add close paren
   kable()
 ```
 
-## Table: Age, by cancer type and advanced-stage status
 
-This goes along with the density plots earlier.
+
+
+## Colon stage/age plot
+
+```{r plot-colon-age, message=FALSE, warning=FALSE}
+ggplot(
+  data = colon,
+  aes(
+    Age,
+    fill = Stage,
+    color = Stage
+  )
+) +
+  geom_density(alpha=0.3) +
+  xlim(20, 100)
+
+ggplot(data = colon, aes(Age)) +
+  geom_histogram() +
+  facet_grid(rows="Stage") +
+  xlim(20, 100)
+```
+
+## Lung stage/age plot
+
+```{r plot-lung-age, message=FALSE, warning=FALSE}
+ggplot(
+  data = lung,
+  aes(
+    Age,
+    fill = Stage,
+    color = Stage
+  )
+) +
+  geom_density(alpha=0.3) +
+  xlim(20, 100)
+
+ggplot(data = lung, aes(Age)) +
+  geom_histogram() +
+  facet_grid(rows="Stage") +
+  xlim(20, 100)
+```
+
+
+
+## Table: Age quartiles vs. advanced-stage status
+
+This goes along with the density plots earlier. All $P$ values are by Wilcoxon.
 
 ```{r age-assoc, message=FALSE}
 all_data %>% 
   group_by(cancer_type, Stage) %>% 
-  summarise(across(Age, q123ms)) %>% 
+  summarise(across(Age, q123ms), n=n()) %>% 
   unite(Age_median, Age_q1, col="Median_Q1", sep = " (") %>% 
-  unite(Median_Q1, Age_q3, col = "Median_Q1_Q3", sep = " - ") %>% 
-  unite(Age_mean, Age_sd, col="Mean_SD", sep = " (") %>% 
-  mutate(across(c(Median_Q1_Q3, Mean_SD), ~ paste0(.x, ")"))) %>% 
+  unite(Median_Q1, Age_q3, col = "Age_quartiles", sep = " - ") %>% 
+  unite(Age_mean, Age_sd, col="Age_mean_SD", sep = " (") %>% 
+  mutate(across(starts_with("Age_"), ~ paste0(.x, ")"))) %>% 
   mutate(P_value = case_when(
     cancer_type == "Colon" ~ round(p_colon_age, 3),
-    TRUE ~ p_lung_age
+    TRUE ~ p_lung_age  # Trying to show very low P without rounding.
   )) %>% 
+  relocate(n, .after = Stage) %>% 
   kable()
 ```
 
@@ -865,7 +831,7 @@ It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, 
 
 ## Table: stratified $P$ values (gender vs. time)
 
-```{r good-wilcox, warning=FALSE}
+```{r good-wilcox, message=FALSE, warning=FALSE}
 reviewed_all %>%
   group_by(site, cancer_type) %>%
   filter(!is.na(signal_to_init), !is.na(Sex)) %>%
@@ -901,7 +867,7 @@ reviewed_all %>%
 
 ## Table: Time intervals vs. gender
 
-```{r time-gender-table}
+```{r time-gender-table, message=FALSE}
 reviewed_all %>% 
   # filter(!is.na(Sex)) %>%   # Don't filter for now, so we see when NAs are present.
   group_by(site, cancer_type, Sex) %>% 
@@ -932,7 +898,7 @@ r <- function(spear){
 }
 ```
 
-- [ ] Get rid of all the `eval=FALSE`
+- [x] Get rid of all the `eval=FALSE`
 
 - [x] Do something with `cor.test()` like the way we used `wilcox.test()` with a formula. See line 854 or so, above. Here is the function we will apply using `across()`:
 
