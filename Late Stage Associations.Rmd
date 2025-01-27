@@ -448,6 +448,21 @@ Purely descriptive stats of the following:
 ## Table: categoricals
 
 ```{r review-table-ci}
+va_population_ci <- all_data %>%
+  group_by(site, cancer_type) %>% 
+  count(Sex) %>% 
+  mutate(d = sum(n)) %>% 
+  filter(Sex=="M") %>% 
+  mutate(
+    Percentage = percentage_text(n, d),
+    wilson.poi = binconf(n, d)[,"PointEst"],
+    wilson.low = binconf(n, d)[,"Lower"],
+    wilson.upp = binconf(n, d)[,"Upper"],
+    Characteristic = "Sex M",
+    .keep = "unused"
+  ) %>% 
+  select(!Sex)
+
 chart_rev_confint <- bind_rows(
   # Build up 4 "sub-tables," one for each of 4 categorical vars of interest.
   # (MOD, sex, signal, considered)
@@ -474,7 +489,7 @@ chart_rev_confint <- bind_rows(
 ) %>% 
   mutate(
     Percentage = percentage_text(n, d),
-    wilson.poi = binconf(n, d)[,"PointEst"],  # We don't need this because of percentage_text().
+    wilson.poi = binconf(n, d)[,"PointEst"],
     wilson.low = binconf(n, d)[,"Lower"],
     wilson.upp = binconf(n, d)[,"Upper"]
   ) %>% 
@@ -486,16 +501,27 @@ chart_rev_confint <- bind_rows(
       (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
       (Fact == "Ca considered" & Val == "No")  # Assume Unsure = considered.
   ) %>% 
-  arrange(desc(site), desc(cancer_type), Fact)
+  unite(col=Characteristic, Fact, Val, sep=" ") %>% 
+  arrange(desc(site), desc(cancer_type), Characteristic) %>% 
+  bind_rows(va_population_ci)
+```
 
+```{r presentation-ci}
 chart_rev_confint %>%
   select(!c(n, d, wilson.poi)) %>% 
   mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
   unite(wilson.low, wilson.upp, col="Wilson_CI", sep = "-") %>% 
   unite(col=Percent_CI, Percentage, Wilson_CI, sep = " ") %>% 
   pivot_wider(names_from = c(site, cancer_type), values_from = Percent_CI) %>% 
-  unite(col=Characteristic, Fact, Val, sep=" ") %>% 
   kable()
+```
+
+```{r plot-confint}
+chart_rev_confint %>% 
+  ggplot(aes(x = wilson.poi, y = Characteristic, colour = site)) +
+  facet_grid(rows=vars(cancer_type)) +
+  geom_point() +
+  geom_errorbar(aes(xmin = wilson.low, xmax = wilson.upp))
 ```
 
 \newpage
