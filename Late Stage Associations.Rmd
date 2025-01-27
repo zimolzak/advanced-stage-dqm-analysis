@@ -508,7 +508,6 @@ mean_text <- Vectorize(mean_text_scalar)
 ```
 
 ```{r table-descriptives-continuous-strat, message=FALSE}
-
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
   summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123ms)) %>% 
@@ -544,15 +543,11 @@ day_breaks_custom <- year_breaks_custom * 365
 
 ```
 
-
 ```{r fig-binning-custom-histo}
-
 reviewed_all %>% 
   ggplot(aes(x=signal_to_completion)) +
   geom_histogram(breaks = day_breaks_custom) +
   scale_x_continuous(breaks=seq(0, 6000, 365*2))
-
-
 ```
 
 
@@ -595,8 +590,6 @@ day_breaks_ed <- year_breaks_ed * 365
 
 
 ```{r s2c-plot, warning=FALSE}
-
-
 reviewed_all %>% 
   filter(MOD_definite == TRUE) %>% 
   mutate(
@@ -615,12 +608,10 @@ ggplot(aes(x=signal_to_completion)) +
 ```
 
 ```{r table-binning}
-
 reviewed_all %>% 
   filter(MOD_definite == TRUE) %>% 
   mutate(
     months = signal_to_completion /  (365 / 12),
-    
     signal_to_completion_months = cut(months, breaks=month_breaks_ed),
     .before = everything()
   ) %>% 
@@ -825,6 +816,20 @@ $$ \{s_1, s_2, a_1, a_2, t\} \times \{l, c\} \times  \{v, g\} = |\mathbb{V}| \cd
 
 where $\mathbb{V}$ is what pair of variables you're correlating, $\mathbb{C}$ is `cancer_type`, and $\mathbb{S}$ is `site`.
 
+Maybe a notation better illustrating the pairing would be something like:
+
+$$ \{st, su, at, au, tu\} \times \{l, c\} \times  \{v, g\}$$
+
+var  |  sex  |   age   |  $t_{si}$   |   $t_{ic}$
+-----|-------|---------|-------------|-------------
+sex  |  x    |         |      s1     |     s2
+age  |  x    |    x    |      a1     |     a2         
+tsi  |  x    |    x    |      x      |     t         
+tic  |  x    |    x    |      x      |     x
+
+
+
+
 ## Shell table for me
 
 Too abstract for paper
@@ -899,7 +904,7 @@ reviewed_all %>%
 
 
 
-# Associations: continuous vs. continuous
+# FIXME - Associations: continuous vs. continuous
 
 ## Initiation time vs. age plot
 
@@ -915,13 +920,52 @@ r <- function(spear){
 
 Left off here. *leftoff*
 
-Get rid of all the `eval=FALSE`
+- [ ] Get rid of all the `eval=FALSE`
 
-Do something with `cor.test()` like the way we used `wilcox.test()` with a formula. See line 854 or so, above. Here is the function we will apply using `across()`:
+- [ ] Do something with `cor.test()` like the way we used `wilcox.test()` with a formula. See line 854 or so, above. Here is the function we will apply using `across()`:
 
 `~ wilcox.test(. ~ Sex)$p.value`
 
 ...but probably need to use a `list()` or something, because extracting both $P$ and $\rho$.
+
+```{r size-of-filtered-subset}
+reviewed_all %>% 
+  group_by(site, cancer_type) %>% 
+  mutate(total = n()) %>% 
+  count(signal_present, MOD_definite, total) %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+  mutate(Percent.MOD.and.signal = round(n / total * 100, 1)) %>% 
+  select(site, cancer_type, n, total, Percent.MOD.and.signal) %>% 
+  kable()
+```
+
+```{r correlations-full-table}
+pval_rho <- list(
+  p_value = ~cor.test(., method = "spearman")$p.value,
+  rho = ~cor.test(., method = "spearman")$estimate
+)
+
+cor.p <- function(vec1, vec2) {
+  result <- cor.test(~vec1 + vec2, method = "spearman")
+  return(p(result))
+}
+
+cor.p <- function(vec1, vec2) {
+  result <- cor.test(~vec1 + vec2, method = "spearman")
+  return(p(result))
+}
+
+
+
+reviewed_all %>% 
+  group_by(site, cancer_type) %>% 
+  filter(signal_present=="Yes", MOD_definite) %>% 
+  summarise(
+    across(where(~ signal_to_init + init_to_completion), pval_rho)
+  # summarise(
+  #   st12 = cor.test(~ signal_to_init + init_to_completion, method="spearman")$p.value
+  )
+```
 
 ```{r ia-test, eval=FALSE}
 sp_ia <- cor.test(temporal$Age, temporal$sig_to_init, method = "spearman")
