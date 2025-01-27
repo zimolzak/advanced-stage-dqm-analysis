@@ -634,9 +634,9 @@ reviewed_all %>%
 
 
 
-# Comprehensive associations: Colon
+# Associations: comprehensive data
 
-## Table: Sex vs stage
+## Colon: Sex vs stage
 
 
 ```{r test-colon-sex, echo=TRUE}
@@ -649,7 +649,7 @@ chi_colon_sex
 p_colon_sex <- chi_colon_sex$p.value
 ```
 
-## Table: Race vs stage
+## Colon Table: Race vs stage
 
 ```{r test-colon-race, include=FALSE}
 tab_colon_race <- table(colon$Race, colon$Stage)
@@ -691,9 +691,7 @@ wilc_colon_age
 p_colon_age <- wilc_colon_age$p.value
 ```
 
-# Comprehensive associations: Lung
-
-## Sex vs Stage
+## Lung: Sex vs Stage
 
 ```{r test-lung-sex, include=FALSE}
 tab_lung_sex <- table(lung$Sex, lung$Stage)
@@ -705,7 +703,7 @@ chi_lung_sex
 p_lung_sex <- chi_lung_sex$p.value
 ```
 
-## Race vs stage
+## Lung: Race vs stage
 
 ```{r test-lung-race, include=FALSE}
 tab_lung_race <- table(lung$Race, lung$Stage)
@@ -753,7 +751,7 @@ t.test(
 ```
 
 
-# Comprehensive associations: combined
+# Associations: Comprehensive data, combined
 
 ## Table: Advanced stage percentages, by demographics
 
@@ -863,9 +861,9 @@ tribble(
 
 It's really only 2 gender correlations ($s_1, s_2$) that we test with Wilcoxon, but it's times 4 strata, so that's 8 tests. Best to have a Wilcoxon function for this table.
 
-# Associations: chart review (categorical vs. continuous)
+# Associations: chart review
 
-## Table: stratified $P$ values (gender)
+## Table: stratified $P$ values (gender vs. time)
 
 ```{r good-wilcox, warning=FALSE}
 reviewed_all %>%
@@ -922,9 +920,7 @@ reviewed_all %>%
 
 
 
-# Associations: continuous vs. continuous
-
-## Multiple correlations
+## Multiple correlations (continuous vs. continuous)
 
 ```{r helper-fns}
 p <- function(spear){
