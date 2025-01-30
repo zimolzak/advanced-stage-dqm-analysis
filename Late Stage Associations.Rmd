@@ -591,9 +591,7 @@ ggplot(reviewed_all %>% filter(site !="VA"), aes(x=Age)) +
   facet_grid(vars(site, cancer_type))
 ```
 
-
-
-## Time with custom breaks
+## FIGURE to include - Time with custom breaks
 
 ```{r constants}
 yearly = seq(0, 6000, 365)
