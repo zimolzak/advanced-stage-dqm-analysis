@@ -104,10 +104,10 @@ colon_geis_raw <- read_csv("Late Stage CRC Final DU 1-26-22.csv") %>%
 
 # NOTE - there were garbage rows at the bottom of these ones marked "OLD"
 
-lung_va_raw_OLD <- read_csv("VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
-  mutate(cancer_type = "Lung", site="VA")
-colon_va_raw_OLD <- read_csv("VA Colon stage review deid+MM3_CRC_Export.csv") %>% 
-  mutate(cancer_type = "Colon", site="VA")
+# lung_va_raw_OLD <- read_csv("VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
+#   mutate(cancer_type = "Lung", site="VA")
+# colon_va_raw_OLD <- read_csv("VA Colon stage review deid+MM3_CRC_Export.csv") %>% 
+#   mutate(cancer_type = "Colon", site="VA")
 
 lung_va_raw <- read_csv("deid-again-2025-01/deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
   mutate(cancer_type = "Lung", site="VA")
@@ -141,6 +141,8 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
     Age = PatientAgeCapped
   ) %>% 
   relocate(site, cancer_type, Sex, Race, Age, Stage)
+
+rm(colon_raw, lung_raw)  # keep geisinger_comprehensive for later
 ```
 
 ```{r dim-col-comprehensive, echo=TRUE}
@@ -257,6 +259,9 @@ reviewed_all <- bind_rows(
     init_to_completion = as.numeric(dx_eval_complete_date - dx_eval_init_date),
     signal_to_completion = as.numeric(dx_eval_complete_date - signal_date)
   )
+
+rm(lung_va_raw, colon_va_raw, lung_geis_raw, colon_geis_raw)
+rm(coltype_spec, geis_columns)
 ```
 
 ```{r dim-col-reviews, echo=TRUE}
@@ -273,6 +278,8 @@ Original character in columns. New Boolean in rows.
 ```{r doublecheck-va}
 table(reviewed_va_lung_colon$MOD_definite, reviewed_va_lung_colon$DxMOD, useNA = "ifany") %>% 
   kable()
+
+rm(reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon)
 ```
 
 ## Tidying summary
@@ -398,6 +405,8 @@ bind_rows(compr_sex, compr_race, compr_age) %>%
   rename(VA_Lung = Lung, VA_Colon = Colon) %>%   # have to rename first
   bind_rows(compr_adv) %>% 
   kable()
+
+rm(compr_adv, compr_age, compr_race, compr_sex)
 ```
 
 ## Figure: age
@@ -682,6 +691,9 @@ wilc_lung_age <- wilcox.test(
   lung %>% filter(Stage == "Early") %>% pull(Age)
 )
 p_lung_age <- wilc_lung_age$p.value
+
+rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
+rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
 
 All $P$ values are by $\chi^2$.
@@ -712,6 +724,8 @@ assoc <- bind_rows(assoc_r, assoc_s) %>%
     Colon_Advanced, Colon_Denom, Colon_Rate, p_colon,
     Lung_Advanced, Lung_Denom, Lung_Rate, p_lung
   )
+
+rm(assoc_r, assoc_s)
 
 assoc %>% 
   arrange(Factor, desc(Lung_Denom)) %>% 
