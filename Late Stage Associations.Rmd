@@ -259,7 +259,9 @@ reviewed_all <- bind_rows(
     init_to_completion = as.numeric(dx_eval_complete_date - dx_eval_init_date),
     signal_to_completion = as.numeric(dx_eval_complete_date - signal_date)
   )
+```
 
+```{r remove-chart-rev-bits}
 rm(lung_va_raw, colon_va_raw, lung_geis_raw, colon_geis_raw)
 rm(coltype_spec, geis_columns)
 ```
