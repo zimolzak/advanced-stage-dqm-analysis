@@ -539,10 +539,17 @@ review_ci_concise <- chart_rev_confint %>%
 
 ```{r plot-ci}
 chart_rev_confint %>% 
-  ggplot(aes(x = wilson.poi, y = Characteristic, colour = site)) +
-  facet_grid(rows=vars(cancer_type)) +
-  geom_point() +
-  geom_errorbar(aes(xmin = wilson.low, xmax = wilson.upp))
+  ggplot(aes(x = Characteristic, y = wilson.poi, colour = site, group = site)) +
+  facet_grid(cols=vars(cancer_type)) +
+  geom_errorbar(aes(ymin = wilson.low, ymax = wilson.upp), position = "dodge", width=0.3, color="#222222", linewidth = 0.3) +
+  geom_point(position= position_dodge(width = 0.3), size=1.7) +
+  scale_x_discrete(
+    guide = guide_axis(n.dodge = 2),
+    name = "",
+    labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'MOD present', 'Male')
+  ) +
+  ylim(0,1) +
+  labs(y = "Proportion")
 ```
 
 \newpage
