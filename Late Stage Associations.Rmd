@@ -259,24 +259,34 @@ reviewed_all <- bind_rows(
 ```{r declined}
 reviewed_va_lung_colon %>% 
   count(site, cancer_type, PtDecline) %>% 
+  group_by(cancer_type) %>% 
+  mutate(
+    tot = sum(n),
+    pct = round(n / tot * 100, 2)
+  ) %>% 
+  filter(PtDecline == "Yes") %>% 
   kable()
 
 cat('x')
 
 reviewed_geis_colon %>% 
   count(site, cancer_type, `Was a colonoscopy screening performed prior to index visit?`) %>% 
+  mutate(
+    tot = sum(n),
+    pct = round(n / tot * 100, 2)
+  ) %>% 
   kable()
 
 reviewed_geis_colon %>% 
   count(site, cancer_type, `Did the patient decline screening colonoscopies in the past?`) %>% 
+  mutate(
+    tot = sum(n),
+    pct = round(n / tot * 100, 2)
+  ) %>% 
   kable()
 
 reviewed_geis_lung %>% 
-  count(site, cancer_type, ldct_offered) %>% 
-  kable()
-
-reviewed_geis_lung %>% 
-  count(site, cancer_type, ldct_declined) %>% 
+  count(site, cancer_type, ldct_offered, ldct_declined) %>% 
   kable()
 ```
 
