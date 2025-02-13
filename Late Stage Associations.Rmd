@@ -261,12 +261,15 @@ reviewed_va_lung_colon %>%
   count(site, cancer_type, PtDecline) %>% 
   kable()
 
+cat('x')
+
 reviewed_geis_colon %>% 
   count(site, cancer_type, `Was a colonoscopy screening performed prior to index visit?`) %>% 
   kable()
 
 reviewed_geis_colon %>% 
-  count(site, cancer_type, `Did the patient decline screening colonoscopies in the past?`)
+  count(site, cancer_type, `Did the patient decline screening colonoscopies in the past?`) %>% 
+  kable()
 
 reviewed_geis_lung %>% 
   count(site, cancer_type, ldct_offered) %>% 
