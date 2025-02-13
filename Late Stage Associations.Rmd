@@ -159,7 +159,11 @@ reviewed_geis_lung <- lung_geis_raw %>%
       TRUE ~ NA
     )
   ) %>% 
-  rename(Sex = Gender) %>% 
+  rename(
+    Sex = Gender,
+    screening_offered = ldct_offered,
+    screening_declined = ldct_declined
+  ) %>% 
   relocate(
     site, cancer_type, Age, Sex, Race,  # Location,
     signal_present, cancer_dx_considered, MOD_present_main_outcome, MOD_definite,
@@ -169,7 +173,9 @@ reviewed_geis_lung <- lung_geis_raw %>%
 reviewed_geis_colon <- colon_geis_raw %>% 
   rename(
     Age = `Age:`,
-    modtext = `Is there a missed opportunity (in general) in this case?`
+    modtext = `Is there a missed opportunity (in general) in this case?`,
+    screening_declined = `Did the patient decline screening colonoscopies in the past?`,
+    screening_performed = `Was a colonoscopy screening performed prior to index visit?`
   ) %>% 
   mutate(
     Sex = as.factor(`Gender:`),
@@ -224,6 +230,7 @@ reviewed_va_lung_colon <- lung_va_raw %>%
     dx_eval_complete_date = as.Date(siginit + initcomp + yr_offset),
     signal_type = as.factor(RFInitialRF)
   ) %>% 
+  rename(screening_declined = PtDecline) %>% 
   relocate(
     site, cancer_type,  # Age, Sex, Race, Location,
     signal_present, cancer_dx_considered, MOD_definite,
@@ -240,7 +247,8 @@ reviewed_all <- bind_rows(
     site, cancer_type, Age, Sex, Race, Location,
     signal_present, cancer_dx_considered, MOD_definite,
     signal_date, dx_eval_init_date, dx_eval_complete_date,
-    Reviewer
+    Reviewer,
+    screening_performed, screening_declined, screening_offered
   ) %>% 
   mutate(
     across(c(site, cancer_type), as.factor),
@@ -252,42 +260,6 @@ reviewed_all <- bind_rows(
     init_to_completion = as.numeric(dx_eval_complete_date - dx_eval_init_date),
     signal_to_completion = as.numeric(dx_eval_complete_date - signal_date)
   )
-```
-
-## About "patient declined"
-
-```{r declined}
-reviewed_va_lung_colon %>% 
-  count(site, cancer_type, PtDecline) %>% 
-  group_by(cancer_type) %>% 
-  mutate(
-    tot = sum(n),
-    pct = round(n / tot * 100, 2)
-  ) %>% 
-  filter(PtDecline == "Yes") %>% 
-  kable()
-
-cat('x')
-
-reviewed_geis_colon %>% 
-  count(site, cancer_type, `Was a colonoscopy screening performed prior to index visit?`) %>% 
-  mutate(
-    tot = sum(n),
-    pct = round(n / tot * 100, 2)
-  ) %>% 
-  kable()
-
-reviewed_geis_colon %>% 
-  count(site, cancer_type, `Did the patient decline screening colonoscopies in the past?`) %>% 
-  mutate(
-    tot = sum(n),
-    pct = round(n / tot * 100, 2)
-  ) %>% 
-  kable()
-
-reviewed_geis_lung %>% 
-  count(site, cancer_type, ldct_offered, ldct_declined) %>% 
-  kable()
 ```
 
 ```{r remove-chart-rev-bits}
@@ -548,18 +520,21 @@ review_ci_concise <- chart_rev_confint %>%
 ```
 
 ```{r plot-ci}
+theme_set(theme_bw())
+
 chart_rev_confint %>% 
-  ggplot(aes(x = Characteristic, y = wilson.poi, colour = site, group = site)) +
+  rename(Site = site) %>% 
+  ggplot(aes(x = Characteristic, y = wilson.poi, colour = Site, group = Site)) +
   facet_grid(cols=vars(cancer_type)) +
   geom_errorbar(aes(ymin = wilson.low, ymax = wilson.upp), position = "dodge", width=0.3, color="#222222", linewidth = 0.3) +
   geom_point(position= position_dodge(width = 0.3)) +
   scale_x_discrete(
     guide = guide_axis(n.dodge = 2),
-    name = "",
     labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'MOD present', 'Male')
   ) +
   ylim(0,1) +
-  labs(y = "Proportion")
+  labs(x = "Patient characteristic", y = "Proportion of patients") +
+  theme(panel.grid.major.x = element_blank())
 ```
 
 \newpage
@@ -620,13 +595,50 @@ reviewed_all %>%
   kable()
 ```
 
-## Misc.
+## Age
 
 ```{r descrip-facet-age, warning=FALSE}
 ggplot(reviewed_all %>% filter(site !="VA"), aes(x=Age)) +
   geom_histogram(binwidth = 2) +
   facet_grid(vars(site, cancer_type))
+
+ggplot(reviewed_all %>% filter(site !="VA"), aes(y=Age)) +
+  geom_boxplot() +
+  facet_grid(cols=vars(cancer_type), rows=vars(site))
 ```
+
+```{r age-definitive}
+temp_boxplot_data <- reviewed_all %>%
+  filter(site == "Geisinger") %>% 
+  select(site, cancer_type, Age) %>% 
+  bind_rows(
+    all_data %>%
+      select(site, cancer_type, Age)
+  ) %>%
+  group_by(site, cancer_type) %>% 
+  mutate(
+    is_outlier = case_when(
+      Age < quantile(Age, probs = 0.25) - 1.5 * IQR(Age) ~ "black",
+      Age > quantile(Age, probs = 0.75) + 1.5 * IQR(Age) ~ "black",
+      TRUE ~ NA
+    )
+  ) 
+  
+  
+temp_boxplot_data %>% 
+  ggplot(aes(y=Age, x  = paste(site, cancer_type), fill=site )) +   # fill=site
+  geom_boxplot(staplewidth = 0.2, outlier.shape = 1, outlier.fill = "white") +
+  geom_jitter(color = temp_boxplot_data$is_outlier ) +
+  theme(
+    panel.grid.major.x = element_blank()
+  ) +
+  labs(x = "")
+
+
+```
+
+
+
 
 ## FIGURE to include - Time with custom breaks
 
