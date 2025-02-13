@@ -42,7 +42,7 @@ output: pdf_document
 
 
 
-# Intro
+# R libraries
 
 ```{r setup, include=FALSE}
 library(dplyr)
@@ -56,8 +56,6 @@ library(forcats)
 
 knitr::opts_chunk$set(echo = FALSE)  # Sets the default to "Run but don't show code."
 ```
-
-## Versions
 
 ```{r version, echo=TRUE}
 R.version.string
@@ -277,23 +275,25 @@ colnames(reviewed_all)
 
 ## Tidying summary
 
-List of vars that I actually analyze:
+List of vars that I actually analyze (see auto-printed list above ):
 
-- Sex
-- Stage (early/advanced)
-- Race
-- Age
-- cancer_type
-- site (VA/Geisinger)
-- `MOD_present_main_outcome` $\to$ No. You should use `MOD_definite`
-- `signal_present`
-- `cancer_dx_considered`
-- `signal_date`
-- `dx_eval_init_date`
-- `dx_eval_complete_date`
-- `signal_type`: tidied but not (yet) used
+1. `Sex`
+1. Stage (early/advanced)
+1. `Race`
+1. `Age`
+1. `cancer_type`
+1. `site` (VA/Geisinger)
+1. `MOD_present_main_outcome` $\to$ No. You should use `MOD_definite`
+1. `signal_present`
+1. `cancer_dx_considered`
+1. `signal_date`
+1. `dx_eval_init_date`
+1. `dx_eval_complete_date`
+1. `signal_type`: tidied but not (yet) used
+1. `screening_declined`
+1. signal to init to completion date intervals
 
-Might not have:
+Don't seem to have:
 
 - Geisinger full data (to see about PCP exclusion)
 - Geisinger non-late-stage
@@ -314,8 +314,6 @@ percentage_text <- function(numerator, denominator) {
   return(final_text)
 }
 
-
-
 pct_ci_text <- function(numerator, denominator) {
   low = binconf(numerator, denominator)[,"Lower"]
   upp = binconf(numerator, denominator)[,"Upper"]
@@ -326,7 +324,6 @@ pct_ci_text <- function(numerator, denominator) {
   final_text <- paste0(ptext, "% (", ltext, "-", utext, ")")
   return(final_text)
 }
-
 
 q123ms <- list(
   q1 = ~quantile(.x, 0.25, na.rm = TRUE),
@@ -404,12 +401,14 @@ rm(compr_adv, compr_age, compr_race, compr_sex)
 
 ## Figure: age histog
 
-```{r plot-age-simple}
+```{r plot-age-simple, eval=FALSE, include=FALSE}
 all_data %>% 
   ggplot(aes(x=Age)) +
   geom_histogram(binwidth = 2) +
   facet_grid(rows=vars(cancer_type))
 ```
+
+Output turned off---we do this better in a boxplot later.
 
 ## For editor comment (PCP visit criterion/flow)
 
@@ -517,6 +516,7 @@ chart_rev_confint <- bind_rows(
 ## Detailed
 
 ```{r kable-descr-reviews}
+# Print the detailed CI table now.
 chart_rev_confint %>%
   select(site, cancer_type, Characteristic, Percentage, wilson.low, wilson.upp) %>% 
   mutate(across(starts_with("wilson"), ~ round(.x * 100, 1) )) %>% 
@@ -524,13 +524,11 @@ chart_rev_confint %>%
   unite(col=Percent_CI, Percentage, Wilson_CI, sep = " ") %>% 
   pivot_wider(names_from = c(site, cancer_type), values_from = Percent_CI) %>% 
   kable()
-# print the detailed one now.
 
+# Prepare concise CI table for later. We do bind_rows() on it later: "TABLE 1"
 review_ci_concise <- chart_rev_confint %>%
   select(site, cancer_type, Characteristic, P_CI_short) %>% 
   pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short)
-# We do bind_rows()  on this later.
-
 ```
 
 ```{r plot-ci}
@@ -547,8 +545,14 @@ chart_rev_confint %>%
     labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'Declined\nscreening', 'MOD present', 'Male')
   ) +
   ylim(0,1) +
-  labs(x = "Patient characteristic", y = "Proportion of patients") +
-  theme(panel.grid.major.x = element_blank())
+  labs(x = "Patient Characteristic", y = "Proportion of Patients") +
+  theme(
+    panel.grid.major.x = element_blank(),
+    legend.title =  element_text(size=10),
+    legend.position = "inside",
+    legend.background  = element_rect(color="grey", linewidth = 0.4),
+    legend.position.inside = c(0.1, 0.92)
+  )
 ```
 
 \newpage
@@ -643,7 +647,7 @@ temp_boxplot_data %>%
 
 
 
-## FIGURE to include - Time with custom breaks
+## FIGURE or table to include - Time with custom breaks
 
 ```{r constants}
 yearly = seq(0, 6000, 365)
