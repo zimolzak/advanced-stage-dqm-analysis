@@ -254,9 +254,33 @@ reviewed_all <- bind_rows(
   )
 ```
 
+## About "patient declined"
+
+```{r declined}
+reviewed_va_lung_colon %>% 
+  count(site, cancer_type, PtDecline) %>% 
+  kable()
+
+reviewed_geis_colon %>% 
+  count(site, cancer_type, `Was a colonoscopy screening performed prior to index visit?`) %>% 
+  kable()
+
+reviewed_geis_colon %>% 
+  count(site, cancer_type, `Did the patient decline screening colonoscopies in the past?`)
+
+reviewed_geis_lung %>% 
+  count(site, cancer_type, ldct_offered) %>% 
+  kable()
+
+reviewed_geis_lung %>% 
+  count(site, cancer_type, ldct_declined) %>% 
+  kable()
+```
+
 ```{r remove-chart-rev-bits}
 rm(lung_va_raw, colon_va_raw, lung_geis_raw, colon_geis_raw)
 rm(coltype_spec, geis_columns)
+rm(reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon)
 ```
 
 ```{r dim-col-reviews, echo=TRUE}
@@ -265,17 +289,6 @@ colnames(reviewed_all)
 ```
 
 \newpage
-
-## Double-checking VA MOD coding/conversion
-
-Original character in columns. New Boolean in rows.
-
-```{r doublecheck-va}
-table(reviewed_va_lung_colon$MOD_definite, reviewed_va_lung_colon$DxMOD, useNA = "ifany") %>% 
-  kable()
-
-rm(reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon)
-```
 
 ## Tidying summary
 
