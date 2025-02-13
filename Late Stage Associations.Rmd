@@ -402,7 +402,7 @@ bind_rows(compr_sex, compr_race, compr_age) %>%
 rm(compr_adv, compr_age, compr_race, compr_sex)
 ```
 
-## Figure: age
+## Figure: age histog
 
 ```{r plot-age-simple}
 all_data %>% 
@@ -423,7 +423,16 @@ all_data %>%
   ) %>% 
   select(site, cancer_type, percent_before_cutoff, percent_after_cutoff) %>% 
   kable()
+
+all_data %>% 
+  count(site, cancer_type, HasPCPAfterCutOff, HasPCPBeforeCutOff) %>% 
+  kable()
 ```
+
+Interpretation of this last table: The combination of no PCP after cutoff
+**and** no PCP before cutoff (the pair (0,0)) doesn't exist. Only (0,1), (1,0),
+and (1,1) exist. Seems like we did inclusion criterion where it must be (before
+**or** after).
 
 ## For R1 comment (missingness)
 
@@ -478,10 +487,10 @@ chart_rev_confint <- bind_rows(
     filter(!is.na(cancer_dx_considered)) %>% count(site, cancer_type, cancer_dx_considered) %>%
     mutate(d = sum(n), Fact = "Ca considered", Val=as.character(cancer_dx_considered)) %>%  
     select(site, cancer_type, Fact, Val, n, d),
-  
-  
-  
-  
+  reviewed_all %>% group_by(site, cancer_type) %>% 
+    count(site, cancer_type, screening_declined) %>%
+    mutate(d = sum(n), Fact = "Ever declined screening", Val=as.character(screening_declined)) %>%  
+    select(site, cancer_type, Fact, Val, n, d),
   va_population_ci
 ) %>% 
   mutate(
@@ -498,7 +507,8 @@ chart_rev_confint <- bind_rows(
     (Fact == "MOD" & Val == TRUE) |
       (Fact == "Sex" & Val == "M") |
       (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
-      (Fact == "Ca considered" & Val == "No")  # Assume Unsure = considered.
+      (Fact == "Ca considered" & Val == "No") |  # Assume Unsure = considered.
+      (Fact == "Ever declined screening" & Val == "Yes")
   ) %>% 
   unite(col=Characteristic, Fact, Val, sep=" ") %>% 
   arrange(desc(site), desc(cancer_type), Characteristic)
@@ -534,23 +544,11 @@ chart_rev_confint %>%
   geom_point(position= position_dodge(width = 0.3)) +
   scale_x_discrete(
     guide = guide_axis(n.dodge = 2),
-    labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'MOD present', 'Male')
+    labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'Declined\nscreening', 'MOD present', 'Male')
   ) +
   ylim(0,1) +
   labs(x = "Patient characteristic", y = "Proportion of patients") +
   theme(panel.grid.major.x = element_blank())
-```
-
-## Patient declined screening
-
-FIXME - need the part about "patient declined"
-
-```{r patient-declined-table}
-reviewed_all %>% 
-  count(site, cancer_type, screening_declined) %>% 
-  group_by(site, cancer_type) %>% 
-  mutate(tot = sum(n), pct = round(n / tot * 100, 1)) %>% 
-  filter(screening_declined == "Yes")
 ```
 
 \newpage
@@ -613,16 +611,6 @@ reviewed_all %>%
 
 ## Age
 
-```{r descrip-facet-age, warning=FALSE}
-ggplot(reviewed_all %>% filter(site !="VA"), aes(x=Age)) +
-  geom_histogram(binwidth = 2) +
-  facet_grid(vars(site, cancer_type))
-
-ggplot(reviewed_all %>% filter(site !="VA"), aes(y=Age)) +
-  geom_boxplot() +
-  facet_grid(cols=vars(cancer_type), rows=vars(site))
-```
-
 ```{r age-definitive}
 temp_boxplot_data <- reviewed_all %>%
   filter(site == "Geisinger") %>% 
@@ -638,7 +626,7 @@ temp_boxplot_data <- reviewed_all %>%
       Age > quantile(Age, probs = 0.75) + 1.5 * IQR(Age) ~ "black",
       TRUE ~ NA
     )
-  ) 
+  )
 
 temp_boxplot_data %>% 
   ggplot(aes(y=Age, x  = paste(site, cancer_type), fill=site )) +
@@ -648,7 +636,8 @@ temp_boxplot_data %>%
     panel.grid.major.x = element_blank(),
     legend.position = "none"
   ) +
-  labs(x = "")
+  labs(x = "") +
+  scale_fill_hue(c=50)
 ```
 
 
@@ -683,13 +672,15 @@ reviewed_all %>%
     signal_to_completion_yrs = signal_to_completion/365.25,
     Population = paste(site, cancer_type)
   ) %>% 
-ggplot(aes(x=signal_to_completion_yrs, y = Population)) +
+ggplot(aes(x=signal_to_completion_yrs, y = Population, fill=site)) +
   geom_boxplot(staplewidth = 0.15) +
   #facet_grid(vars(site, cancer_type)) +
   coord_cartesian(xlim=c(0, 10)) +
   scale_x_continuous(minor_breaks = seq(1,20)) +
   labs(title="Limited to MOD only") +
-  coord_flip()
+  coord_flip() +
+  theme(panel.grid.major.x = element_blank(), legend.position = "none") +
+  scale_fill_hue(c=50)
 ```
 
 ```{r table-binning}
