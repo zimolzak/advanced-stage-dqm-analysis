@@ -651,8 +651,9 @@ ggplot(aes(x=signal_to_completion_yrs, y = Population)) +
   geom_boxplot(staplewidth = 0.15) +
   #facet_grid(vars(site, cancer_type)) +
   coord_cartesian(xlim=c(0, 10)) +
-  scale_x_continuous(breaks = yearly/365, minor_breaks = quarterly/365) +
-  labs(title="Limited to MOD only")
+  scale_x_continuous(minor_breaks = seq(1,20)) +
+  labs(title="Limited to MOD only") +
+  coord_flip()
 ```
 
 ```{r table-binning}
