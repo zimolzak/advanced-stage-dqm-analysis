@@ -77,16 +77,12 @@ for (i in 1:length(si$otherPkgs)) {
 
 ```{r read, include=FALSE}
 
-# Column setup (only for Geisinger Lung)
+# Comprehensive
 
-geis_columns <- read_csv("geis_colnames.csv")
-coltype_spec <- paste0(geis_columns$type, collapse="")
-
-# Imports
-
-lung_raw <- read_csv("VA Lung comprehensive.csv") %>% 
+lung_raw <- read_csv("VA Lung comprehensive.csv", show_col_types = FALSE) %>% 
   mutate(cancer_type = "Lung", site="VA")
-colon_raw <- read_csv("VA Colon comprehensive.csv") %>%
+
+colon_raw <- read_csv("VA Colon comprehensive.csv", show_col_types = FALSE) %>%
   mutate(cancer_type = "Colon", site="VA")
 
 geisinger_comprehensive <- tribble(
@@ -97,27 +93,24 @@ geisinger_comprehensive <- tribble(
   "Geisinger", "Colon", 627, "Total",
 )
 
-lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv", col_types = coltype_spec)
-  # mutate *after* assigning column names.
-colon_geis_raw <- read_csv("Late Stage CRC Final DU 1-26-22.csv") %>% 
+# Chart review
+
+geis_columns <- read_csv("geis_colnames.csv", show_col_types = FALSE)
+coltype_spec <- paste0(geis_columns$type, collapse="")
+lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv",
+                          col_types = coltype_spec,
+                          show_col_types = FALSE)  # mutate *after* assigning column names.
+
+colon_geis_raw <- read_csv("Late Stage CRC Final DU 1-26-22.csv", show_col_types = FALSE) %>% 
   mutate(cancer_type = "Colon", site="Geisinger")
 
-# NOTE - there were garbage rows at the bottom of these ones marked "OLD"
-
-# lung_va_raw_OLD <- read_csv("VA Lung stage review deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
-#   mutate(cancer_type = "Lung", site="VA")
-# colon_va_raw_OLD <- read_csv("VA Colon stage review deid+MM3_CRC_Export.csv") %>% 
-#   mutate(cancer_type = "Colon", site="VA")
-
-lung_va_raw <- read_csv("deid-again-2025-01/deid+MM3_LC_Export_Added1OfMissing3.csv") %>% 
+lung_va_raw <- read_csv("deid-again-2025-01/deid+MM3_LC_Export_Added1OfMissing3.csv", show_col_types = FALSE) %>% 
   mutate(cancer_type = "Lung", site="VA")
 
-colon_va_raw <- read_csv("deid-again-2025-01/deid+MM3_CRC_Export.csv") %>% 
+colon_va_raw <- read_csv("deid-again-2025-01/deid+MM3_CRC_Export.csv", show_col_types = FALSE) %>% 
   mutate(cancer_type = "Colon", site="VA") %>% 
-  filter(!is.na(CancerStage)) %>% 
-# IMPORTANT - filtered out garbage rows at end (leftover of Excel export)
+  filter(!is.na(CancerStage)) %>%  # filter garbage rows at end (leftover of Excel)
   rename(siginit = `siginit-neg-never`)
-
 ```
 
 ```{r tidy-comprehensive}
