@@ -686,16 +686,34 @@ reviewed_all %>%
     signal_to_completion_yrs = signal_to_completion/365.25,
     Population = paste(site, cancer_type)
   ) %>% 
-ggplot(aes(x=signal_to_completion_yrs, y = Population, fill=site)) +
+ggplot(aes(y=signal_to_completion_yrs, x = Population, fill=site)) +
+  geom_boxplot(staplewidth = 0.15) +
+  coord_cartesian(ylim=c(0, 4)) +
+  scale_y_continuous(minor_breaks = seq(1,20)) +
+  labs(title="Limited to MOD only") +
+  theme(panel.grid.major.x = element_blank(), legend.position = "none") +
+  scale_fill_hue(c=50)
+
+reviewed_all %>% 
+  filter(MOD_definite == TRUE, init_to_completion >= 0) %>% 
+  mutate(
+    init_to_completion_yrs = init_to_completion/365.25,
+    Population = paste(site, cancer_type)
+  ) %>% 
+ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   geom_boxplot(staplewidth = 0.15) +
   #facet_grid(vars(site, cancer_type)) +
-  coord_cartesian(xlim=c(0, 10)) +
-  scale_x_continuous(minor_breaks = seq(1,20)) +
+
+  coord_cartesian(ylim=c(0, 4)) +
+  
+  scale_y_continuous(minor_breaks = seq(1,20)) +
+  
   labs(title="Limited to MOD only") +
-  coord_flip() +
   theme(panel.grid.major.x = element_blank(), legend.position = "none") +
   scale_fill_hue(c=50)
 ```
+
+
 
 ```{r table-binning}
 reviewed_all %>% 
@@ -1009,7 +1027,7 @@ ggplot(aes(x=signal_to_init, y=init_to_completion)) +
 
 ## INSERT ONE: Time from susp to dx, vs.\ MOD
 
-```{r assoc-most-specif, warning=FALSE}
+```{r assoc-most-detailed, warning=FALSE}
 reviewed_all %>% 
   select(
     site, cancer_type, MOD_definite, signal_to_init, init_to_completion,
@@ -1040,6 +1058,7 @@ reviewed_all %>%
   arrange(site, cancer_type, desc(MOD_definite), desc(times_are_recorded)) %>% 
   pivot_wider(names_from = times_are_recorded, values_from = n, names_prefix = "times_") %>% 
   filter(!is.na(MOD_definite)) %>% 
+  mutate(pct = round(times_TRUE / (times_FALSE + times_TRUE) * 100, 1)) %>% 
   kable()
 ```
 
@@ -1073,21 +1092,22 @@ reviewed_all %>%
 ```{r simpler-boxplot-for-r1-ZOOM, warning=FALSE}
 reviewed_all %>% 
   select(site, cancer_type, MOD_definite, init_to_completion) %>% 
-  mutate(Days = init_to_completion, .keep = "unused") %>%
   filter(
     !is.na(MOD_definite),
-    Days > -300
+    init_to_completion > -300
   ) %>% 
   unite(col = "Population", site:cancer_type, sep=" ") %>% 
   rename(`MOD present` = MOD_definite) %>% 
-  ggplot(aes(y = Days, x = Population, color= `MOD present`, group = paste(`MOD present`, Population))) +   # x=paste(site, cancer_type), y
+  ggplot(aes(y = init_to_completion, x = Population, color= `MOD present`, group = paste(`MOD present`, Population))) +   # x=paste(site, cancer_type), y
   geom_point(alpha = 0.7, position = position_jitterdodge(jitter.width = 0.2)) +
   geom_boxplot(color="black", fill=NA, outliers = FALSE, staplewidth = 0.5) +
-  scale_y_continuous(breaks = seq(-60, 360, 30)) +
-  coord_cartesian(ylim =c(0, 100)) +
+  scale_y_continuous(breaks = seq(-180, 180*6, 180)) +
+  coord_cartesian(ylim =c(0, 400)) +  # 0, 100 worked okay
   theme(
     panel.grid.major.x = element_blank(),
     legend.position = "bottom"
-  )
+  ) +
+  labs(y = "Workup initiation to completion (days)")
 ```
+
 
