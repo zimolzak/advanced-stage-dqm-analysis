@@ -1115,24 +1115,23 @@ useful commit IDs: `a0cd45253` put it in, `c228851` took it out.
 
 
 ```{r wacky-time-plot}
-t_all %>% 
-  filter(cancer_type == "Lung") %>% 
-  # arrange(sig_to_init + init_to_complete) %>% 
-  arrange(sig_to_init) %>% 
-  mutate(
-    sig_to_complete = sig_to_init + init_to_complete,
+reviewed_all %>% 
+  arrange(signal_to_completion) %>% 
+  #arrange(signal_to_init) %>% 
+  filter(MOD_definite) %>% 
+    mutate(
     patient_id = row_number(),
-    vmin = sig_to_init,
-    vmax = sig_to_complete
+    vmin = signal_to_init,
+    vmax = signal_to_completion
   ) %>% 
   pivot_longer(
-    cols = c("sig_to_init", "sig_to_complete"),
+    cols = c("signal_to_init", "signal_to_completion"),
     names_to = "interval_type",
-    names_prefix = "sig_to_"
+    names_prefix = "signal_to_"
   ) %>% 
   ggplot(aes(x = value, y = patient_id)) +
-  geom_point(aes(shape = factor(interval_type), colour = factor(Reviewer))) +
-  geom_linerange(aes(xmin = vmin, xmax=vmax, color=factor(Reviewer))) +
-  geom_linerange(aes(xmin = 0, xmax=vmin, color=factor(Reviewer)), alpha = 0.2) +
-  scale_x_sqrt()
+  geom_point(aes(shape = factor(interval_type))) +
+  geom_linerange(aes(xmin = vmin, xmax=vmax)) +
+  #geom_linerange(aes(xmin = 0, xmax=vmin), alpha = 0.2) +
+  coord_cartesian(xlim = c(-2, 750))
 ```
