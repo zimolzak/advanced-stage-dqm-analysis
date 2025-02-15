@@ -1111,3 +1111,28 @@ reviewed_all %>%
 ```
 
 
+useful commit IDs: `a0cd45253` put it in, `c228851` took it out.
+
+
+```{r wacky-time-plot}
+t_all %>% 
+  filter(cancer_type == "Lung") %>% 
+  # arrange(sig_to_init + init_to_complete) %>% 
+  arrange(sig_to_init) %>% 
+  mutate(
+    sig_to_complete = sig_to_init + init_to_complete,
+    patient_id = row_number(),
+    vmin = sig_to_init,
+    vmax = sig_to_complete
+  ) %>% 
+  pivot_longer(
+    cols = c("sig_to_init", "sig_to_complete"),
+    names_to = "interval_type",
+    names_prefix = "sig_to_"
+  ) %>% 
+  ggplot(aes(x = value, y = patient_id)) +
+  geom_point(aes(shape = factor(interval_type), colour = factor(Reviewer))) +
+  geom_linerange(aes(xmin = vmin, xmax=vmax, color=factor(Reviewer))) +
+  geom_linerange(aes(xmin = 0, xmax=vmin, color=factor(Reviewer)), alpha = 0.2) +
+  scale_x_sqrt()
+```
