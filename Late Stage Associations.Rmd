@@ -1056,15 +1056,18 @@ reviewed_all %>%
   mutate(Years = init_to_completion / 365, .keep = "unused") %>%
   filter(!is.na(MOD_definite)) %>% 
   unite(col = "Population", site:cancer_type, sep=" ") %>% 
-  ggplot(aes(y = Years, x = Population, color= MOD_definite, group = paste(MOD_definite, Population))) +   # x=paste(site, cancer_type), y
+  rename(`MOD present` = MOD_definite) %>% 
+  ggplot(aes(y = Years, x = Population, color= `MOD present`, group = paste(`MOD present`, Population))) +   # x=paste(site, cancer_type), y
   geom_point(alpha = 0.5, position = position_jitterdodge()) +
   geom_boxplot(color="black", fill=NA, outliers = FALSE, staplewidth = 0.5) +
   #facet_grid(rows = vars(Population)) +
   scale_y_continuous(breaks = seq(-1, 2, 1)) +
-  coord_cartesian(ylim =c(-1/6, 2.5)) +
+  coord_cartesian(ylim =c(-1/12, 2.5)) +
   theme(
-  #  legend.position = "none", 
-    panel.grid.major.x = element_blank()
+    panel.grid.major.x = element_blank(),
+    legend.position = "inside",
+    legend.background  = element_rect(color="grey", linewidth = 0.4),
+    legend.position.inside = c(0.9, 0.88)
   )
 ```
 
