@@ -513,11 +513,11 @@ chart_rev_confint <- bind_rows(
   mutate(Characteristic = case_when(
     Characteristic == "Ca considered No" ~ "Cancer not\nconsidered",
     
-    # Ca signal Yes
-    # Ever declined screening Yes
-    # MOD TRUE
-    # Sex M
-    
+    Characteristic == "Ca signal Yes" ~ "Cancer signal\npresent",
+    Characteristic == "Ever declined screening Yes" ~ 'Declined\nscreening',
+    Characteristic == "MOD TRUE" ~ 'MOD present',
+    Characteristic == "Sex M" ~ 'Male',
+# c("Cancer not\nconsidered", 'Cancer signal\npresent', , , )
     .default = Characteristic
   )) %>% 
   arrange(desc(site), desc(cancer_type), Characteristic)
@@ -1041,5 +1041,28 @@ reviewed_all %>%
   pivot_wider(names_from = times_are_recorded, values_from = n, names_prefix = "times_") %>% 
   filter(!is.na(MOD_definite)) %>% 
   kable()
+```
+
+Exact quote of what was recommended to analyze:
+
+> time from suspicion to diagnosis
+
+What's 'suspicion'? Is it cancer signal? Or test ordered? Probably the latter.
+So we will focus on `init_to_completion`.
+
+```{r simpler-boxplot-for-r1, warning=FALSE}
+reviewed_all %>% 
+  select(site, cancer_type, MOD_definite, init_to_completion) %>% 
+  mutate(Years = init_to_completion / 365, .keep = "unused") %>%
+  filter(!is.na(MOD_definite)) %>% 
+  unite(col = "Population", site:cancer_type, sep=" ") %>% 
+  ggplot(aes(x= Years, y = MOD_definite, color= MOD_definite)) +   # x=paste(site, cancer_type), y
+  geom_jitter(alpha = 0.5) +
+  geom_boxplot(color="black", fill = NA, outliers = FALSE, staplewidth = 0.5, varwidth = TRUE) +
+  facet_grid(rows = vars(Population)) +
+  scale_x_continuous(breaks = seq(-1, 2, 1)) +
+  coord_cartesian(xlim=c(-1/6, 2.5)) +
+  theme(legend.position = "none", panel.grid.major.y = element_blank()) +
+  labs(x="Years", y="MOD present")
 ```
 
