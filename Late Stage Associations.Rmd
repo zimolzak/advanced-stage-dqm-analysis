@@ -73,7 +73,7 @@ for (i in 1:length(si$otherPkgs)) {
 
 # Import and tidy
 
-```{r read, include=FALSE}
+```{r import, include=FALSE}
 
 # Comprehensive
 
@@ -95,6 +95,7 @@ geisinger_comprehensive <- tribble(
 
 geis_columns <- read_csv("geis_colnames.csv", show_col_types = FALSE)
 coltype_spec <- paste0(geis_columns$type, collapse="")
+# The colnames CSV is only for lung.
 lung_geis_raw <- read_csv("final lung LS for Houston de-id Divvy 3-28-22.csv",
                           col_types = coltype_spec,
                           show_col_types = FALSE)  # mutate *after* assigning column names.
@@ -499,7 +500,6 @@ chart_rev_confint <- bind_rows(
     wilson.low = binconf(n, d)[,"Lower"],
     wilson.upp = binconf(n, d)[,"Upper"]
   ) %>% 
-
   filter(
     # Exclude a few rows because it is redundant to say 25% true, 75% false. Just
     # mention one of these %s.
@@ -509,7 +509,17 @@ chart_rev_confint <- bind_rows(
       (Fact == "Ca considered" & Val == "No") |  # Assume Unsure = considered.
       (Fact == "Ever declined screening" & Val == "Yes")
   ) %>% 
-  unite(col=Characteristic, Fact, Val, sep=" ") %>% 
+  unite(col=Characteristic, Fact, Val, sep=" ") %>%
+  mutate(Characteristic = case_when(
+    Characteristic == "Ca considered No" ~ "Cancer not\nconsidered",
+    
+    # Ca signal Yes
+    # Ever declined screening Yes
+    # MOD TRUE
+    # Sex M
+    
+    .default = Characteristic
+  )) %>% 
   arrange(desc(site), desc(cancer_type), Characteristic)
 ```
 
@@ -542,7 +552,7 @@ chart_rev_confint %>%
   geom_point(position= position_dodge(width = 0.3)) +
   scale_x_discrete(
     guide = guide_axis(n.dodge = 2),
-    labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'Declined\nscreening', 'MOD present', 'Male')
+    # labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'Declined\nscreening', 'MOD present', 'Male')
   ) +
   ylim(0,1) +
   labs(x = "Patient Characteristic", y = "Proportion of Patients") +
@@ -996,3 +1006,40 @@ ggplot(aes(x=signal_to_init, y=init_to_completion)) +
   coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
+
+## Time from susp to dx, vs.\ MOD
+
+```{r assoc-most-specif, warning=FALSE}
+reviewed_all %>% 
+  select(
+    site, cancer_type, MOD_definite, signal_to_init, init_to_completion,
+    signal_to_completion
+  ) %>% 
+  mutate(across(contains("_to_"), ~ .x / 365)) %>%
+  filter(!is.na(  MOD_definite )) %>% 
+  pivot_longer(cols = signal_to_init:signal_to_completion) %>% 
+  unite(col = "Population", site:cancer_type, sep=" ") %>% 
+  ggplot(aes(x=value, y = MOD_definite, color= MOD_definite)) +   # x=paste(site, cancer_type), y
+  geom_jitter(alpha = 0.5) +
+  geom_boxplot(color="black", fill = NA, outliers = FALSE, staplewidth = 0.5, varwidth = TRUE) +
+  # scale_fill_hue(c= 40, l=75) +
+  facet_grid(rows = vars(Population), cols=vars(name)) +
+  scale_x_continuous(breaks = seq(-1, 2, 1)) +
+  coord_cartesian(xlim=c(-1/6, 2.5)) +
+  theme(legend.position = "none", panel.grid.major.y = element_blank()) +
+  labs(x="Years", y="MOD present")
+```
+
+I think the intervals just aren't collected a lot when MOD is false.
+
+```{r multi-2-by-2}
+reviewed_all %>% 
+  select(site, cancer_type, MOD_definite, signal_to_completion) %>% 
+  mutate(times_are_recorded = !is.na(signal_to_completion), .keep = "unused") %>% 
+  count(site, cancer_type, MOD_definite, times_are_recorded) %>% 
+  arrange(site, cancer_type, desc(MOD_definite), desc(times_are_recorded)) %>% 
+  pivot_wider(names_from = times_are_recorded, values_from = n, names_prefix = "times_") %>% 
+  filter(!is.na(MOD_definite)) %>% 
+  kable()
+```
+
