@@ -1007,7 +1007,7 @@ ggplot(aes(x=signal_to_init, y=init_to_completion)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
-## Time from susp to dx, vs.\ MOD
+## INSERT ONE: Time from susp to dx, vs.\ MOD
 
 ```{r assoc-most-specif, warning=FALSE}
 reviewed_all %>% 
@@ -1087,6 +1087,7 @@ reviewed_all %>%
   coord_cartesian(ylim =c(0, 100)) +
   theme(
     panel.grid.major.x = element_blank(),
+    legend.position = "bottom"
   )
 ```
 
