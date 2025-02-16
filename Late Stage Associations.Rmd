@@ -1052,6 +1052,19 @@ reviewed_all %>%
   kable()
 ```
 
+```{r twelve-tests}
+reviewed_all %>% 
+  select(
+    site, cancer_type, MOD_definite,
+    signal_to_init, init_to_completion, signal_to_completion
+  ) %>% 
+  filter(!is.na(  MOD_definite ), signal_to_init > -7, !is.na(init_to_completion)) %>% 
+  group_by(site, cancer_type) %>% 
+  #mutate(result = median(signal_to_init))
+  summarise(across(contains("_to_"), median))
+```
+
+
 Exact quote of what was recommended to analyze:
 
 > time from suspicion to diagnosis
@@ -1076,7 +1089,8 @@ reviewed_all %>%
     legend.position = "inside",
     legend.background  = element_rect(color="grey", linewidth = 0.4),
     legend.position.inside = c(0.9, 0.88)
-  )
+  ) +
+  labs(y = "Workup initiation to completion (years)")
 ```
 
 ```{r simpler-boxplot-for-r1-ZOOM, warning=FALSE}
@@ -1095,9 +1109,11 @@ reviewed_all %>%
   coord_cartesian(ylim =c(0, 400)) +  # 0, 100 worked okay
   theme(
     panel.grid.major.x = element_blank(),
-    legend.position = "bottom"
+    legend.position = "inside",
+    legend.background  = element_rect(color="grey", linewidth = 0.4),
+    legend.position.inside = c(0.9, 0.88)
   ) +
-  labs(y = "Workup initiation to completion (days)")
+  labs(y = "Workup initiation to completion (days)", title = "Zoomed in")
 ```
 
 
