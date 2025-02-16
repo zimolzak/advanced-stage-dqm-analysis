@@ -1116,10 +1116,11 @@ useful commit IDs: `a0cd45253` put it in, `c228851` took it out.
 
 ```{r wacky-time-plot}
 reviewed_all %>% 
-  arrange(signal_to_completion) %>% 
+  #arrange(signal_to_completion) %>% 
   #arrange(signal_to_init) %>% 
+  arrange(site, cancer_type, signal_to_completion) %>% 
   filter(MOD_definite) %>% 
-    mutate(
+  mutate(
     patient_id = row_number(),
     vmin = signal_to_init,
     vmax = signal_to_completion
@@ -1129,9 +1130,11 @@ reviewed_all %>%
     names_to = "interval_type",
     names_prefix = "signal_to_"
   ) %>% 
-  ggplot(aes(x = value, y = patient_id)) +
+  ggplot(aes(y = value, x = patient_id, colour = paste(site, cancer_type))) +
+  geom_linerange(aes(ymin = vmin, ymax=vmax), alpha=0.2) +
   geom_point(aes(shape = factor(interval_type))) +
-  geom_linerange(aes(xmin = vmin, xmax=vmax)) +
   #geom_linerange(aes(xmin = 0, xmax=vmin), alpha = 0.2) +
-  coord_cartesian(xlim = c(-2, 750))
+  coord_cartesian(ylim = c(-2, 750)) +
+  scale_y_continuous(breaks = seq(0, 900, 180)) +
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
 ```
