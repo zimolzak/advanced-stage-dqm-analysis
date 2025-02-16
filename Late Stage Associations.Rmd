@@ -1062,10 +1062,8 @@ reviewed_all %>%
   group_by(site, cancer_type) %>% 
   summarise(across(
     contains("_to_"),
-    median
+    ~ wilcox.test(. ~ MOD_definite)$p.value
   ))
-
-#      ~ wilcox.test(. ~ Sex)$p.value,
 
 ```
 
