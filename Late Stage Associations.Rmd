@@ -1116,7 +1116,10 @@ useful commit IDs: `a0cd45253` put it in, `c228851` took it out.
 
 ```{r wacky-time-plot, warning=FALSE}
 temp_limit_to_mod <- reviewed_all %>%
-  filter(MOD_definite) %>% 
+  filter(
+    MOD_definite,
+    signal_to_completion > -7
+  ) %>% 
   #arrange(signal_to_completion) %>% 
   #arrange(signal_to_init) %>% 
   arrange(site, cancer_type, signal_to_completion) %>% 
@@ -1129,24 +1132,22 @@ temp_limit_to_mod <- reviewed_all %>%
     cols = c("signal_to_init", "signal_to_completion"),
     names_to = "interval_type",
     names_prefix = "signal_to_"
-  ) %>% 
-  mutate(interval_color=case_when(
-    interval_type == "init" ~ "cyan",
-    interval_type == "completion" ~ "magenta"
-  ))
+  )
   
-LW  <-  1.3
+LW  <-  1.4
   
 temp_limit_to_mod %>% 
   ggplot(aes(y = value, x = patient_id, colour = paste(site, cancer_type))) +
-  geom_linerange(
-    aes(ymin = vmin, ymax=vmax),
-    #color = temp_limit_to_mod$interval_color  # okay it's always magenta here,
-    linewidth=LW
-  ) +
+  geom_linerange(aes(ymin = vmin, ymax=vmax), linewidth=LW) +
   geom_linerange(aes(ymin = 0, ymax=vmin), color="lightgrey", linewidth=LW) +
-  geom_point(aes(shape = factor(interval_type))) +
+  geom_point(shape=5 , color="black", alpha=0.5) +
   coord_cartesian(ylim = c(-2, 750)) +
-  scale_y_continuous(breaks = seq(0, 900, 180)) +
-  theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
+  scale_y_continuous(breaks = seq(0, 9000, 180), minor_breaks = seq(0,9000, 30)) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 ```
