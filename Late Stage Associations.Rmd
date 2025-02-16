@@ -361,6 +361,8 @@ compr_age <- all_data %>%
   mutate(Characteristic = "Age")
 ```
 
+## Table summarizing all vars on whole population
+
 ```{r kable-descr-comprehensive}
 compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   all_data %>% 
@@ -404,6 +406,8 @@ all_data %>%
 ```
 
 Output turned off---we do this better in a boxplot later.
+
+\newpage
 
 ## For editor comment (PCP visit criterion/flow)
 
@@ -517,7 +521,7 @@ chart_rev_confint <- bind_rows(
   arrange(desc(site), desc(cancer_type), Characteristic)
 ```
 
-## Detailed
+## Proportions table
 
 ```{r kable-descr-reviews}
 # Print the detailed CI table now.
@@ -534,6 +538,8 @@ review_ci_concise <- chart_rev_confint %>%
   select(site, cancer_type, Characteristic, P_CI_short) %>% 
   pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short)
 ```
+
+## Proportions plot
 
 ```{r plot-ci}
 theme_set(theme_bw())
@@ -588,7 +594,7 @@ median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 ```
 
-## TABLE 1
+## TABLE 1 (all vars table)
 
 ```{r kable-descriptives-allvars-strat, message=FALSE}
 reviewed_all %>% 
@@ -617,7 +623,7 @@ reviewed_all %>%
   kable()
 ```
 
-## Age
+## Age plot
 
 ```{r age-definitive}
 temp_boxplot_data <- reviewed_all %>%
@@ -651,7 +657,7 @@ temp_boxplot_data %>%
 
 
 
-## FIGURE or table to include - Time with custom breaks
+## Temporality figures and table - INCLUDE one
 
 ```{r constants}
 yearly = seq(0, 6000, 365)
@@ -766,7 +772,7 @@ rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
 rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
 
-## USEFUL TABLE
+## Race and sex vs.\ advanced - USEFUL TABLE
 
 All $P$ values are by $\chi^2$.
 
@@ -896,7 +902,7 @@ reviewed_all %>%
   kable()
 ```
 
-## Age vs. times: $\rho$ coefficients
+## Age vs. temporality
 
 ```{r helper-fns}
 p <- function(spear){
@@ -918,6 +924,8 @@ reviewed_all %>%
   select(site, cancer_type, n, total, Percent.MOD.and.signal) %>% 
   kable()
 ```
+
+$\rho$ coefficients, with "*" meaning significant at $P < 0.05$.
 
 ```{r correlations-full-table, message=FALSE, warning=FALSE}
 # warnings are about P value with ties.
@@ -971,7 +979,7 @@ reviewed_all %>%
   kable()
 ```
 
-## Initiation time vs. age
+### Initiation time vs. age
 
 ```{r ia-plot, message=FALSE, warning=FALSE}
 reviewed_all %>% 
@@ -985,7 +993,7 @@ ggplot(aes(x=Age, y=signal_to_init)) +
 
 Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only ever used to use lung! It ignored colon.
 
-## Completion time vs. age
+### Completion time vs. age
 
 ```{r completion-age-plots, message=FALSE, warning=FALSE}
 reviewed_all %>% 
@@ -1000,7 +1008,7 @@ ggplot(aes(x=Age, y=init_to_completion)) +
 
 \newpage
 
-## Initiation time vs. completion time
+### Initiation time vs. completion time
 
 ```{r init-completion-corr-plots, warning=FALSE}
 reviewed_all %>% 
@@ -1015,7 +1023,15 @@ ggplot(aes(x=signal_to_init, y=init_to_completion)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
-## INSERT ONE? Not as useful as MOD-only: Time from susp to dx, vs.\ MOD
+## MOD vs.\ temporality - INSERT ONE?
+
+These plots may be what we should do, versus the MOD-only, descriptive analyses above. Exact quote of what was recommended to analyze:
+
+> time from suspicion to diagnosis
+
+What's 'suspicion'? Is it cancer signal? Or test ordered?
+
+P values:
 
 ```{r twelve-tests, message=FALSE, warning=FALSE}
 ptext_flat <- function(p) {
@@ -1077,7 +1093,7 @@ reviewed_all %>%
   labs(x="Years", y="MOD present")
 ```
 
-I think the intervals just aren't collected a lot when MOD is false.
+I think the intervals just aren't collected a lot when MOD is false. This table shows that:
 
 ```{r multi-2-by-2}
 reviewed_all %>% 
@@ -1090,13 +1106,6 @@ reviewed_all %>%
   mutate(pct = round(times_TRUE / (times_FALSE + times_TRUE) * 100, 1)) %>% 
   kable()
 ```
-
-Exact quote of what was recommended to analyze:
-
-> time from suspicion to diagnosis
-
-What's 'suspicion'? Is it cancer signal? Or test ordered? Probably the latter.
-So we will focus on `init_to_completion`.
 
 ```{r simpler-boxplot-for-r1, warning=FALSE}
 reviewed_all %>% 
