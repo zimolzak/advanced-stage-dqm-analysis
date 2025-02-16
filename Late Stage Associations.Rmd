@@ -1126,28 +1126,41 @@ temp_limit_to_mod <- reviewed_all %>%
   mutate(
     patient_id = row_number(),
     vmin = signal_to_init,
-    vmax = signal_to_completion
+    vmax = signal_to_completion,
+    Population = paste(site, cancer_type)
   ) %>% 
   pivot_longer(
     cols = c("signal_to_init", "signal_to_completion"),
     names_to = "interval_type",
     names_prefix = "signal_to_"
+  ) %>% 
+  mutate(
+    point_shape = case_when(
+      interval_type == "init" ~ 4,  # X shape
+      interval_type == "completion" ~ 3,  # + shape
+    ),
+    Workup = case_when(
+      interval_type == "init" ~ "Initiated",
+      interval_type == "completion" ~ "Completed",
+    )
   )
   
 LW  <-  1.4
   
 temp_limit_to_mod %>% 
-  ggplot(aes(y = value, x = patient_id, colour = paste(site, cancer_type))) +
+  ggplot(aes(y = value, x = patient_id, colour = Population)) +
   geom_linerange(aes(ymin = vmin, ymax=vmax), linewidth=LW) +
   geom_linerange(aes(ymin = 0, ymax=vmin), color="lightgrey", linewidth=LW) +
-  geom_point(shape=5 , color="black", alpha=0.5) +
+  geom_point(aes(shape = Workup) , color="black", alpha=0.5) +
   coord_cartesian(ylim = c(-2, 750)) +
   scale_y_continuous(breaks = seq(0, 9000, 180), minor_breaks = seq(0,9000, 30)) +
+  scale_shape_manual(values = c(3, 4)) +
   theme(
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank(),
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank()
-  )
+  ) +
+  labs(y = "Time since cancer signal (days)")
 ```
