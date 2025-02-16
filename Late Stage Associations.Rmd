@@ -5,9 +5,9 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
-# To Do
+# Intro
 
-## My list: data and analyses
+## My to-do list: data and analyses
 
 - Comprehensive data
     - [x] `lung_raw`
@@ -39,10 +39,7 @@ output: pdf_document
     - [x] CIs for percent of MOD (descriptive)
 - [x] Geisinger data
 
-
-
-
-# R libraries
+## R libraries
 
 ```{r setup, include=FALSE}
 library(dplyr)
@@ -68,10 +65,7 @@ for (i in 1:length(si$otherPkgs)) {
 }
 ```
 
-
-
-
-# Import and tidy
+## Import and tidy
 
 ```{r import, include=FALSE}
 
@@ -702,12 +696,8 @@ reviewed_all %>%
   ) %>% 
 ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   geom_boxplot(staplewidth = 0.15) +
-  #facet_grid(vars(site, cancer_type)) +
-
-  coord_cartesian(ylim=c(0, 4)) +
-  
-  scale_y_continuous(minor_breaks = seq(1,20)) +
-  
+  coord_cartesian(ylim=c(0, 1.5)) +
+  scale_y_continuous(minor_breaks = seq(1, 20)) +
   labs(title="Limited to MOD only") +
   theme(panel.grid.major.x = element_blank(), legend.position = "none") +
   scale_fill_hue(c=50)
@@ -730,6 +720,8 @@ reviewed_all %>%
   pivot_wider(id_cols = signal_to_completion_months, names_from = c(site, cancer_type), values_from = Percent) %>% 
   kable()
 ```
+
+*Remainder of page left blank.*
 
 \newpage
 
@@ -773,6 +765,8 @@ p_lung_age <- wilc_lung_age$p.value
 rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
 rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
+
+## USEFUL TABLE
 
 All $P$ values are by $\chi^2$.
 
@@ -902,12 +896,7 @@ reviewed_all %>%
   kable()
 ```
 
-\newpage
-
-
-
-
-## Age vs. times $\rho$ coefficients
+## Age vs. times: $\rho$ coefficients
 
 ```{r helper-fns}
 p <- function(spear){
@@ -1013,19 +1002,20 @@ ggplot(aes(x=Age, y=init_to_completion)) +
 
 ## Initiation time vs. completion time
 
-```{r init-completion-wacky-plots, warning=FALSE}
+```{r init-completion-corr-plots, warning=FALSE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite) %>% 
 ggplot(aes(x=signal_to_init, y=init_to_completion)) +
   geom_jitter(alpha=0.5) +
-  geom_density_2d() +
+  #geom_density_2d() +
+  geom_smooth() +
   scale_y_sqrt() +
   scale_x_sqrt() +
-  coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
+  #coord_cartesian(xlim=c(0,2000), ylim=c(0,1000)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
-## INSERT ONE: Time from susp to dx, vs.\ MOD
+## INSERT ONE? Not as useful as MOD-only: Time from susp to dx, vs.\ MOD
 
 ```{r assoc-most-detailed, warning=FALSE}
 reviewed_all %>% 
@@ -1114,6 +1104,8 @@ reviewed_all %>%
 useful commit IDs: `a0cd45253` put it in, `c228851` took it out.
 
 
+## PEAKS PLOT
+
 ```{r wacky-time-plot, warning=FALSE}
 temp_limit_to_mod <- reviewed_all %>%
   filter(
@@ -1145,8 +1137,8 @@ temp_limit_to_mod <- reviewed_all %>%
     )
   )
   
-LW  <-  1.4
-  
+LW <- 0.8
+
 temp_limit_to_mod %>% 
   ggplot(aes(y = value, x = patient_id, colour = Population)) +
   geom_linerange(aes(ymin = vmin, ymax=vmax), linewidth=LW) +
@@ -1163,4 +1155,7 @@ temp_limit_to_mod %>%
     axis.ticks.x = element_blank()
   ) +
   labs(y = "Time since cancer signal (days)")
+
+#ggsave("peaks.pdf")
 ```
+
