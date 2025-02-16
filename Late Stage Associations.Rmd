@@ -1114,12 +1114,12 @@ reviewed_all %>%
 useful commit IDs: `a0cd45253` put it in, `c228851` took it out.
 
 
-```{r wacky-time-plot}
-reviewed_all %>% 
+```{r wacky-time-plot, warning=FALSE}
+temp_limit_to_mod <- reviewed_all %>%
+  filter(MOD_definite) %>% 
   #arrange(signal_to_completion) %>% 
   #arrange(signal_to_init) %>% 
   arrange(site, cancer_type, signal_to_completion) %>% 
-  filter(MOD_definite) %>% 
   mutate(
     patient_id = row_number(),
     vmin = signal_to_init,
@@ -1130,14 +1130,22 @@ reviewed_all %>%
     names_to = "interval_type",
     names_prefix = "signal_to_"
   ) %>% 
+  mutate(interval_color=case_when(
+    interval_type == "init" ~ "cyan",
+    interval_type == "completion" ~ "magenta"
+  ))
+  
+LW  <-  1.3
+  
+temp_limit_to_mod %>% 
   ggplot(aes(y = value, x = patient_id, colour = paste(site, cancer_type))) +
   geom_linerange(
     aes(ymin = vmin, ymax=vmax),
-    alpha=0.2,
-    color = "green"
+    #color = temp_limit_to_mod$interval_color  # okay it's always magenta here,
+    linewidth=LW
   ) +
+  geom_linerange(aes(ymin = 0, ymax=vmin), color="lightgrey", linewidth=LW) +
   geom_point(aes(shape = factor(interval_type))) +
-  #geom_linerange(aes(xmin = 0, xmax=vmin), alpha = 0.2) +
   coord_cartesian(ylim = c(-2, 750)) +
   scale_y_continuous(breaks = seq(0, 900, 180)) +
   theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
