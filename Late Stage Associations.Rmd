@@ -1131,7 +1131,11 @@ reviewed_all %>%
     names_prefix = "signal_to_"
   ) %>% 
   ggplot(aes(y = value, x = patient_id, colour = paste(site, cancer_type))) +
-  geom_linerange(aes(ymin = vmin, ymax=vmax), alpha=0.2) +
+  geom_linerange(
+    aes(ymin = vmin, ymax=vmax),
+    alpha=0.2,
+    color = "green"
+  ) +
   geom_point(aes(shape = factor(interval_type))) +
   #geom_linerange(aes(xmin = 0, xmax=vmin), alpha = 0.2) +
   coord_cartesian(ylim = c(-2, 750)) +
