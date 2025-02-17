@@ -446,6 +446,7 @@ all_data %>%
   kable()
 ```
 
+\newpage
 
 
 
@@ -709,6 +710,35 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   scale_fill_hue(c=50)
 ```
 
+```{r multi-box-MOD-severity}
+temp_mod_sv <- reviewed_all %>% 
+  mutate(
+    across(contains("_to_"), ~ .x/365.25),
+    Population_n = paste(site, cancer_type, sep="\n"),
+    Population_s = paste(site, cancer_type, sep=" ")   # in case we want to flip coords later
+  ) %>% 
+  rename(
+    `Time 1 (signal to workup initiation)` = signal_to_init,
+    `Time 2 (initiation to completion)` = init_to_completion,
+    `Total (T1 + T2)` = signal_to_completion,
+  ) %>% 
+  pivot_longer(cols = contains("(")) %>% 
+  filter(
+    MOD_definite == TRUE, 
+    value >= 0
+  ) 
+
+temp_mod_sv %>% 
+  mutate(Population = Population_n) %>% 
+ggplot(aes(y = value, x = Population, fill=site)) +
+  geom_boxplot(staplewidth = 0.15, outlier.shape = 1) +
+  coord_cartesian(ylim = c(0, 4)) +
+  facet_grid(cols = vars(name)) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  labs(title="Limited to MOD only", y = "Time, years") +
+  theme(panel.grid.major.x = element_blank(), legend.position = "none") +
+  scale_fill_hue(c=50)
+```
 
 
 ```{r table-binning}
