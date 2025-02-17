@@ -2,7 +2,8 @@
 title: "Late Stage Associations"
 author: "Andrew Zimolzak, MD, MMSc"
 date: "`r Sys.Date()`"
-output: pdf_document
+#output: pdf_document
+output: word_document
 ---
 
 # Intro
@@ -595,7 +596,7 @@ median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 ```
 
-## TABLE 1 (all vars table)
+## TABLE 1 (ALL VARS): INCLUDE
 
 ```{r kable-descriptives-allvars-strat, message=FALSE}
 reviewed_all %>% 
@@ -658,7 +659,7 @@ temp_boxplot_data %>%
 
 
 
-## Temporality figures and table - INCLUDE one
+## Temporality figures and table
 
 ```{r constants}
 yearly = seq(0, 6000, 365)
@@ -709,6 +710,8 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   theme(panel.grid.major.x = element_blank(), legend.position = "none") +
   scale_fill_hue(c=50)
 ```
+
+## FIGURE 1: MOD SEVERITY. INCLUDE
 
 ```{r multi-box-MOD-severity}
 temp_mod_sv <- reviewed_all %>% 
@@ -802,7 +805,7 @@ rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
 rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
 
-## Race and sex vs.\ advanced - USEFUL TABLE
+## Race and sex vs.\ advanced - somewhat useful table
 
 All $P$ values are by $\chi^2$.
 
@@ -1099,7 +1102,7 @@ p_text_for_join <- twelve_tests %>%
 ```
 
 
-```{r assoc-most-detailed, message=FALSE, warning=FALSE}
+```{r assoc-most-detailed-multi-box, message=FALSE, warning=FALSE}
 reviewed_all %>% 
   select(
     site, cancer_type, MOD_definite, signal_to_init, init_to_completion,
