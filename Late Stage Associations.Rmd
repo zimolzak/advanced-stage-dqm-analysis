@@ -619,7 +619,7 @@ median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 ```
 
-## TABLE 2 (CHART REV): INCLUDE
+## TABLE 1 
 
 ```{r kable-descriptives-allvars-strat, message=FALSE}
 t1_df <- data.frame(
@@ -639,7 +639,7 @@ t1_df <- data.frame(
   Characteristic = c(
     "Age, y",
     "Cancer signal to workup initiation, d",
-    "Cancer signal to workup completiono, d",
+    "Cancer signal to workup completion, d",
     "Workup initiation to completion, d",
     "Cancer not considered",
     "Cancer signal present",
@@ -650,7 +650,9 @@ t1_df <- data.frame(
   )
 )
 
-reviewed_all %>% 
+t1t2 <- reviewed_all %>% 
+
+  # Do statistics on CONTINUOUS variables.
   group_by(site, cancer_type) %>% 
   summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123ms)) %>% 
   pivot_longer(
@@ -660,10 +662,8 @@ reviewed_all %>%
   ) %>%
   filter(statistic!="mean", statistic!="sd") %>% 
   pivot_wider(names_from = statistic, values_from = value) %>% 
-  # mutate(across(c(q1, median, q3, mean, sd), ~ round(.x, 1))) %>% 
   mutate(
     median_q1_q3 = median_text(median, q1, q3),
-    # mean_sd = mean_text(mean, sd),
     .keep = "unused"
   ) %>% 
   pivot_wider(
@@ -672,12 +672,48 @@ reviewed_all %>%
     names_sep = " "
   ) %>% 
   rename(Characteristic_short = variable) %>%
+  
+  # Bring in stats on DISCRETE variables.
   bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
   right_join(t1_df) %>% 
   arrange(order) %>% 
+  select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
+
+table_1_for_later %>% 
+  mutate(Characteristic = case_when(
+    Characteristic == "M" ~ "Male",
+    Characteristic == "Age" ~ "Age, y",
+    .default = Characteristic
+  )) %>% 
+  left_join(
+    t1t2 %>% 
+    filter(order < 3, Characteristic != "Advanced stage") %>% 
+    select(Characteristic, `Geisinger Lung`, `Geisinger Colon`) %>%   # age, male
+    rename(gl = `Geisinger Lung`, gc = `Geisinger Colon`)
+  ) %>% 
+  mutate(
+    `Geisinger Lung` = case_when(
+      is.na(`Geisinger Lung`) ~ gl,
+      .default = `Geisinger Lung`
+    ),
+    `Geisinger Colon` = case_when(
+      is.na(`Geisinger Colon`) ~ gc,
+      .default = `Geisinger Colon`
+    )
+  ) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
   kable()
 ```
+
+## TABLE 2
+
+```{r table2}
+t1t2 %>% 
+  filter(order >= 3 ) %>% 
+  select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
+  kable()
+```
+
 
 ## Age plot
 
