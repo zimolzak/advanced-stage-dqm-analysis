@@ -511,13 +511,11 @@ chart_rev_confint <- bind_rows(
   ) %>% 
   unite(col=Characteristic, Fact, Val, sep=" ") %>%
   mutate(Characteristic = case_when(
-    Characteristic == "Ca considered No" ~ "Cancer not\nconsidered",
-    
-    Characteristic == "Ca signal Yes" ~ "Cancer signal\npresent",
-    Characteristic == "Ever declined screening Yes" ~ 'Declined\nscreening',
+    Characteristic == "Ca considered No" ~ "Cancer not considered",
+    Characteristic == "Ca signal Yes" ~ "Cancer signal present",
+    Characteristic == "Ever declined screening Yes" ~ 'Declined screening',
     Characteristic == "MOD TRUE" ~ 'MOD present',
     Characteristic == "Sex M" ~ 'Male',
-# c("Cancer not\nconsidered", 'Cancer signal\npresent', , , )
     .default = Characteristic
   )) %>% 
   arrange(desc(site), desc(cancer_type), Characteristic)
@@ -538,7 +536,7 @@ chart_rev_confint %>%
 # Prepare concise CI table for later. We do bind_rows() on it later: "TABLE 1"
 review_ci_concise <- chart_rev_confint %>%
   select(site, cancer_type, Characteristic, P_CI_short) %>% 
-  pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short)
+  pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short, names_sep = " ")
 ```
 
 ## Proportions plot
@@ -553,7 +551,7 @@ chart_rev_confint %>%
   geom_errorbar(aes(ymin = wilson.low, ymax = wilson.upp), position = "dodge", width=0.3, color="#222222", linewidth = 0.3) +
   geom_point(position= position_dodge(width = 0.3)) +
   scale_x_discrete(
-    guide = guide_axis(n.dodge = 2),
+    guide = guide_axis(n.dodge = 3),
     # labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'Declined\nscreening', 'MOD present', 'Male')
   ) +
   ylim(0,1) +
@@ -599,6 +597,32 @@ mean_text <- Vectorize(mean_text_scalar)
 ## TABLE 1 (ALL VARS): INCLUDE
 
 ```{r kable-descriptives-allvars-strat, message=FALSE}
+t1_df <- data.frame(
+  Characteristic_short = c(
+    "Age",
+    "signal_to_init",
+    "signal_to_completion",
+    "init_to_completion",
+    "Cancer not considered",
+    "Cancer signal present",
+    "Declined screening",
+    "MOD present",
+    "Male"
+  ),
+  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2),
+  Characteristic = c(
+    "Age, y",
+    "Cancer signal to workup initiation, d",
+    "Cancer signal to workup completiono, d",
+    "Workup initiation to completion, d",
+    "Cancer not considered",
+    "Cancer signal present",
+    "Declined screening",
+    "MOD present",
+    "Male"
+  )
+)
+
 reviewed_all %>% 
   group_by(site, cancer_type) %>% 
   summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123ms)) %>% 
@@ -617,11 +641,14 @@ reviewed_all %>%
   ) %>% 
   pivot_wider(
     names_from = c(site, cancer_type),
-    values_from = median_q1_q3
+    values_from = median_q1_q3,
+    names_sep = " "
   ) %>% 
-  relocate(variable, VA_Lung, VA_Colon, Geisinger_Lung, Geisinger_Colon) %>% 
-  rename(Characteristic = variable) %>%
-  bind_rows(review_ci_concise) %>% 
+  rename(Characteristic_short = variable) %>%
+  bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
+  left_join(t1_df) %>% 
+  arrange(order) %>% 
+  select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
   kable()
 ```
 
@@ -711,7 +738,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   scale_fill_hue(c=50)
 ```
 
-## FIGURE 1: MOD SEVERITY. INCLUDE
+## FIGURE 1: MOD SEVERITY. INCLUDE. Limited to MOD only
 
 ```{r multi-box-MOD-severity}
 temp_mod_sv <- reviewed_all %>% 
@@ -721,8 +748,8 @@ temp_mod_sv <- reviewed_all %>%
     Population_s = paste(site, cancer_type, sep=" ")   # in case we want to flip coords later
   ) %>% 
   rename(
-    `Time 1 (signal to workup initiation)` = signal_to_init,
-    `Time 2 (initiation to completion)` = init_to_completion,
+    `Time 1\n(signal to workup initiation)` = signal_to_init,
+    `Time 2\n(initiation to completion)` = init_to_completion,
     `Total (T1 + T2)` = signal_to_completion,
   ) %>% 
   pivot_longer(cols = contains("(")) %>% 
@@ -738,9 +765,20 @@ ggplot(aes(y = value, x = Population, fill=site)) +
   coord_cartesian(ylim = c(0, 4)) +
   facet_grid(cols = vars(name)) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
-  labs(title="Limited to MOD only", y = "Time, years") +
+  labs(y = "Time, years") +
   theme(panel.grid.major.x = element_blank(), legend.position = "none") +
   scale_fill_hue(c=50)
+
+temp_mod_sv %>% 
+  group_by(name) %>% 
+  summarise(max= max(value))
+
+temp_mod_sv %>% 
+  filter(value > 4.0) %>% 
+  select(site, cancer_type, name, value) %>% 
+  count(name, site, cancer_type) %>% 
+  group_by(name) %>% 
+  mutate(subtot = sum(n))
 ```
 
 
