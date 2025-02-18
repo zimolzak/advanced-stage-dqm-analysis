@@ -651,9 +651,10 @@ t1_df <- data.frame(
     "White",
     "Black",
     "Hispanic",
-    "Other"
+    "Other",
+    "n"
   ),
-  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5, 2.1, 2.15, 2.2, 2.3),
+  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5, 2.1, 2.15, 2.2, 2.3, 0),
   Characteristic = c(
     "Age, y",
     "Cancer signal to workup initiation, d",
@@ -668,7 +669,8 @@ t1_df <- data.frame(
     "White",
     "Black",
     "Hispanic",
-    "Other"
+    "Other",
+    "n"
   )
 )
 
@@ -711,9 +713,11 @@ table_1_for_later %>%
   left_join(
     t1t2 %>% 
     filter(order < 3, Characteristic != "Advanced stage") %>% 
-    select(Characteristic, `Geisinger Lung`, `Geisinger Colon`) %>%   # age, male
+    select(order, Characteristic, `Geisinger Lung`, `Geisinger Colon`) %>%   # age, male
     rename(gl = `Geisinger Lung`, gc = `Geisinger Colon`)
   ) %>% 
+  arrange(order) %>% 
+  # Fix the NAs
   mutate(
     `Geisinger Lung` = case_when(
       is.na(`Geisinger Lung`) ~ gl,
@@ -725,6 +729,7 @@ table_1_for_later %>%
     )
   ) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
+  replace_na(list(`Geisinger Lung` = "0%")) %>% 
   kable()
 ```
 
