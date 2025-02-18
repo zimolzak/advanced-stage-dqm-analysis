@@ -516,6 +516,10 @@ chart_rev_confint <- bind_rows(
     count(site, cancer_type, screening_declined) %>%
     mutate(d = sum(n), Fact = "Ever declined screening", Val=as.character(screening_declined)) %>%  
     select(site, cancer_type, Fact, Val, n, d),
+  reviewed_all %>% group_by(site, cancer_type) %>% 
+    count(site, cancer_type, Race) %>%
+    mutate(d = sum(n), Fact = "Race", Val=as.character(Race)) %>%  
+    select(site, cancer_type, Fact, Val, n, d),
   va_population_ci
 ) %>% 
   mutate(
@@ -532,7 +536,8 @@ chart_rev_confint <- bind_rows(
       (Fact == "Sex" & Val == "M") |
       (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
       (Fact == "Ca considered" & Val == "No") |  # Assume Unsure = considered.
-      (Fact == "Ever declined screening" & Val == "Yes")
+      (Fact == "Ever declined screening" & Val == "Yes") |
+      Fact == "Race"
   ) %>% 
   unite(col=Characteristic, Fact, Val, sep=" ") %>%
   mutate(Characteristic = case_when(
@@ -562,6 +567,8 @@ chart_rev_confint %>%
 review_ci_concise <- chart_rev_confint %>%
   select(site, cancer_type, Characteristic, P_CI_short) %>% 
   pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short, names_sep = " ")
+
+# FIXME - left off here. Mutate Characteristic.
 ```
 
 ## Proportions plot
@@ -570,6 +577,7 @@ review_ci_concise <- chart_rev_confint %>%
 theme_set(theme_bw())
 
 chart_rev_confint %>% 
+  filter(!grepl("Race", Characteristic)) %>%   # FIXME - can bring back later
   rename(Site = site) %>% 
   ggplot(aes(x = Characteristic, y = wilson.poi, colour = Site, group = Site)) +
   facet_grid(cols=vars(cancer_type)) +
