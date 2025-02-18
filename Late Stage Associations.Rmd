@@ -566,9 +566,15 @@ chart_rev_confint %>%
 # Prepare concise CI table for later. We do bind_rows() on it later: "TABLE 1"
 review_ci_concise <- chart_rev_confint %>%
   select(site, cancer_type, Characteristic, P_CI_short) %>% 
-  pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short, names_sep = " ")
-
-# FIXME - left off here. Mutate Characteristic.
+  pivot_wider(names_from = c(site, cancer_type), values_from = P_CI_short, names_sep = " ") %>% 
+  mutate(Characteristic = case_when(
+    Characteristic == "Race WHITE" ~ "White",
+    Characteristic == "Race BLACK OR AFRICAN AMERICAN" ~ "Black",
+    Characteristic == "Race ASIAN" ~ "Other",
+    Characteristic == "Race Hispanic or Latino" ~ "Hispanic",
+    .default = Characteristic
+  )) %>% 
+  filter(Characteristic != "Race NA")
 ```
 
 ## Proportions plot
@@ -641,9 +647,13 @@ t1_df <- data.frame(
     "Declined screening",
     "MOD present",
     "Male",
-    "Advanced stage"
+    "Advanced stage",
+    "White",
+    "Black",
+    "Hispanic",
+    "Other"
   ),
-  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5),
+  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5, 2.1, 2.15, 2.2, 2.3),
   Characteristic = c(
     "Age, y",
     "Cancer signal to workup initiation, d",
@@ -654,7 +664,11 @@ t1_df <- data.frame(
     "Declined screening",
     "MOD present",
     "Male",
-    "Advanced stage"
+    "Advanced stage",
+    "White",
+    "Black",
+    "Hispanic",
+    "Other"
   )
 )
 
@@ -682,8 +696,9 @@ t1t2 <- reviewed_all %>%
   rename(Characteristic_short = variable) %>%
   
   # Bring in stats on DISCRETE variables.
+  # IMPORTANT - this is where review_ci_concise comes in.
   bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
-  right_join(t1_df) %>% 
+  right_join(t1_df) %>%  # note, this has similar effect to filter. If row now mentioned, not included.
   arrange(order) %>% 
   select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
 
