@@ -740,7 +740,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
 
 ## FIGURE 1: MOD SEVERITY. INCLUDE. Limited to MOD only
 
-```{r multi-box-MOD-severity}
+```{r multi-box-MOD-severity, message=FALSE}
 temp_mod_sv <- reviewed_all %>% 
   mutate(
     across(contains("_to_"), ~ .x/365.25),
@@ -750,7 +750,7 @@ temp_mod_sv <- reviewed_all %>%
   rename(
     `Time 1\n(signal to workup initiation)` = signal_to_init,
     `Time 2\n(initiation to completion)` = init_to_completion,
-    `Total (T1 + T2)` = signal_to_completion,
+    `Total (Time 1 + Time 2)` = signal_to_completion,
   ) %>% 
   pivot_longer(cols = contains("(")) %>% 
   filter(
@@ -758,29 +758,42 @@ temp_mod_sv <- reviewed_all %>%
     value >= 0
   ) 
 
-temp_mod_sv %>% 
+Y_MAX <- 6  # 8 almost okay but boring
+
+fig1 <- temp_mod_sv %>% 
   mutate(Population = Population_n) %>% 
 ggplot(aes(y = value, x = Population, fill=site)) +
-  geom_boxplot(staplewidth = 0.15, outlier.shape = 1) +
-  coord_cartesian(ylim = c(0, 4)) +
+  geom_boxplot(staplewidth = 0.15, outlier.shape = 1, outlier.alpha = 0.7) +
+  coord_cartesian(ylim = c(0, Y_MAX)) +
   facet_grid(cols = vars(name)) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
-  labs(y = "Time, years") +
+  labs(y = "Time, y") +
   theme(panel.grid.major.x = element_blank(), legend.position = "none") +
   scale_fill_hue(c=50)
 
-temp_mod_sv %>% 
-  group_by(name) %>% 
-  summarise(max= max(value))
+fig1
+
+ggsave("fig1.png", width = 6.5, height=7)
 
 temp_mod_sv %>% 
-  filter(value > 4.0) %>% 
+  filter(value > Y_MAX) %>% 
   select(site, cancer_type, name, value) %>% 
-  count(name, site, cancer_type) %>% 
+  group_by(name, site, cancer_type) %>% 
+  summarise(n = n(), max = round(max(value), 1)) %>% 
   group_by(name) %>% 
-  mutate(subtot = sum(n))
+  mutate(subtot = sum(n)) %>% 
+  kable()
+
+cuts <- temp_mod_sv %>% 
+  filter(value > Y_MAX) %>% 
+  select(site, cancer_type, name, value) %>% 
+  group_by(name) %>% 
+  summarise(n = n(), max = round(max(value), 1))
 ```
 
+In panel one, `r cuts[1,2]` points are off scale, with a maximum of `r cuts[1,3]`.
+In panel two, `r cuts[2,2]` points are off scale, with a maximum of `r cuts[2,3]`.
+In panel three, `r cuts[3,2]` points are off scale, with a maximum of `r cuts[3,3]`.
 
 ```{r table-binning}
 reviewed_all %>% 
@@ -1161,7 +1174,7 @@ reviewed_all %>%
   scale_x_continuous(breaks = seq(-1, 2, 1)) +
   coord_cartesian(xlim=c(-1/6, 2.5)) +
   theme(legend.position = "none", panel.grid.major.y = element_blank()) +
-  labs(x="Years", y="MOD present")
+  labs(x="Time, y", y="MOD present")
 ```
 
 I think the intervals just aren't collected a lot when MOD is false. This table shows that:
@@ -1197,7 +1210,7 @@ reviewed_all %>%
     legend.background  = element_rect(color="grey", linewidth = 0.4),
     legend.position.inside = c(0.9, 0.88)
   ) +
-  labs(y = "Workup initiation to completion (years)")
+  labs(y = "Workup initiation to completion, y")
 ```
 
 ```{r simpler-boxplot-for-r1-ZOOM, warning=FALSE}
