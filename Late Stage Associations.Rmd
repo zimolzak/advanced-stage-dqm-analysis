@@ -301,12 +301,17 @@ Don't seem to have:
 # Descriptives: comprehensive data
 
 ```{r definitions}
-percentage_text <- function(numerator, denominator) {
+percentage_text <- function(numerator, denominator, print_denom = TRUE) {
   # It appears to be already vectorized.
   ntext <- as.character(numerator)
   dtext <- as.character(denominator)
   ptext <- as.character(round(numerator / denominator * 100, 1))
-  final_text <- paste0(ntext, " / ", dtext, " (", ptext, "%)")
+  if (print_denom) {
+    final_text <- paste0(ntext, " / ", dtext, " (", ptext, "%)")
+  }
+  else {
+    final_text <- paste0(ntext, " (", ptext, "%)")
+  }
   return(final_text)
 }
 
@@ -330,12 +335,22 @@ q123ms <- list(
 )
 ```
 
+## TABLE 1: summarizing all vars on whole population
+
 ```{r prep-categor-subtables, message=FALSE}
+compr_n <- all_data %>%
+  group_by(site, cancer_type) %>% 
+  count() %>% 
+  bind_rows(geisinger_comprehensive %>% filter(Stage=="Total") %>% select(site, cancer_type, n)) %>% 
+  mutate(n = as.character(n)) %>% 
+  pivot_wider(names_from = cancer_type, values_from = n) %>% 
+  mutate(Characteristic = "n", Level="n")
+
 compr_sex <- all_data %>%
   group_by(site, cancer_type) %>% 
   count(Sex) %>% 
   mutate(d = sum(n)) %>% 
-  mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
+  mutate(Percent = percentage_text(n, d, FALSE), .keep = "unused") %>% 
   filter(Sex == "M") %>% 
   pivot_wider(names_from = cancer_type, values_from = Percent) %>% 
   mutate(Characteristic = "Sex") %>% 
@@ -346,7 +361,7 @@ compr_race <- all_data %>%
   count(Race) %>% 
   mutate(d = sum(n)) %>% 
   arrange(desc(cancer_type), desc(n)) %>% 
-  mutate(Percent = percentage_text(n, d), .keep = "unused") %>% 
+  mutate(Percent = percentage_text(n, d, FALSE), .keep = "unused") %>% 
   pivot_wider(names_from = cancer_type, values_from = Percent) %>% 
   mutate(Characteristic = "Race") %>% 
   rename(Level = Race)
@@ -359,12 +374,8 @@ compr_age <- all_data %>%
   mutate(quartiles = paste0(quartiles, ")")) %>% 
   select(site, cancer_type, quartiles) %>% 
   pivot_wider(names_from = cancer_type, values_from = quartiles) %>% 
-  mutate(Characteristic = "Age")
-```
+  mutate(Characteristic = "Age", Level="Age")
 
-## Table summarizing all vars on whole population
-
-```{r kable-descr-comprehensive}
 compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   all_data %>% 
     group_by(site, cancer_type) %>% 
@@ -379,22 +390,36 @@ compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   arrange(desc(site), desc(cancer_type), Stage) %>% 
   pivot_wider(names_from = c(site, cancer_type, Stage), values_from = n) %>% 
   mutate(
-    VA_Lung = percentage_text(VA_Lung_Advanced, VA_Lung_Total),
+    VA_Lung = percentage_text(VA_Lung_Advanced, VA_Lung_Total),  # Not doing the ", FALSE)" thing, just as a double check.
     VA_Colon = percentage_text(VA_Colon_Advanced, VA_Colon_Total),
     Geisinger_Lung = percentage_text(Geisinger_Lung_Advanced, Geisinger_Lung_Total),
     Geisinger_Colon = percentage_text(Geisinger_Colon_Advanced, Geisinger_Colon_Total),
     Characteristic = "Advanced stage",
+    Level = "Advanced stage",
     .keep = "unused"
   )
+```
 
-bind_rows(compr_sex, compr_race, compr_age) %>% 
+
+```{r table-descr-comprehensive}
+table_1_for_later <- bind_rows(compr_n, compr_sex, compr_race, compr_age) %>% 
   ungroup() %>% 
-  select(Characteristic, Level, Lung, Colon) %>% 
-  rename(VA_Lung = Lung, VA_Colon = Colon) %>%   # have to rename first
+  pivot_wider(names_from = site, values_from = c(Colon, Lung), names_glue = "{site}_{.value}") %>% 
   bind_rows(compr_adv) %>% 
-  kable()
+  mutate(
+    Characteristic = Level,  # A tricky rename: don't get confused later if debugging.
+    `VA Lung` = VA_Lung,
+    `VA Colon` = VA_Colon,
+    `Geisinger Lung` = Geisinger_Lung,
+    `Geisinger Colon` = Geisinger_Colon,
+    .keep = "unused"
+  )
+```
 
-rm(compr_adv, compr_age, compr_race, compr_sex)
+Table will be rendered later (pending Geisinger chart review data).
+
+```{r cleanup-after-t1}
+rm(compr_n, compr_adv, compr_age, compr_race, compr_sex)
 ```
 
 ## Figure: age histog
@@ -594,7 +619,7 @@ median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 ```
 
-## TABLE 1 (ALL VARS): INCLUDE
+## TABLE 2 (CHART REV): INCLUDE
 
 ```{r kable-descriptives-allvars-strat, message=FALSE}
 t1_df <- data.frame(
@@ -607,9 +632,10 @@ t1_df <- data.frame(
     "Cancer signal present",
     "Declined screening",
     "MOD present",
-    "Male"
+    "Male",
+    "Advanced stage"
   ),
-  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2),
+  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5),
   Characteristic = c(
     "Age, y",
     "Cancer signal to workup initiation, d",
@@ -619,7 +645,8 @@ t1_df <- data.frame(
     "Cancer signal present",
     "Declined screening",
     "MOD present",
-    "Male"
+    "Male",
+    "Advanced stage"
   )
 )
 
@@ -646,7 +673,7 @@ reviewed_all %>%
   ) %>% 
   rename(Characteristic_short = variable) %>%
   bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
-  left_join(t1_df) %>% 
+  right_join(t1_df) %>% 
   arrange(order) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
   kable()
