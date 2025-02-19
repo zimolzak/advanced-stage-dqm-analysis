@@ -2,8 +2,8 @@
 title: "Late Stage Associations"
 author: "Andrew Zimolzak, MD, MMSc"
 date: "`r Sys.Date()`"
-output: pdf_document
-#output: word_document
+#output: pdf_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -645,7 +645,9 @@ t1t2 %>%
 
 ## Age descriptive boxplot
 
-```{r age-definitive, warning=FALSE}
+- *Turned off.*
+
+```{r age-definitive, eval=FALSE, warning=FALSE, include=FALSE}
 temp_boxplot_data <- reviewed_all %>%
   filter(site == "Geisinger") %>% 
   select(site, cancer_type, Age) %>% 
@@ -696,7 +698,10 @@ month_breaks_ed <- year_breaks_ed * 12
 day_breaks_ed <- year_breaks_ed * 365
 ```
 
-```{r boxplot-s2c}
+- Turned off: two boxplots (stratified on $x$ axis) of $t_{13}$ and $t_{23}$. They are just
+subsets of the $3 \times 4$ boxplot (Figure 1) that is to follow.
+
+```{r boxplot-s2c, eval=FALSE, include=FALSE}
 reviewed_all %>% 
   filter(MOD_definite == TRUE, signal_to_completion >= 0) %>% 
   mutate(
@@ -764,6 +769,8 @@ fig1
 ggsave("fig1.png", width = 6.5, height=7)
 ```
 
+## About off-scale points
+
 ```{r some-off-scale-counts, message=FALSE}
 temp_mod_sv %>% 
   filter(value > Y_MAX) %>% 
@@ -798,7 +805,7 @@ In panel one, `r cuts[1,2]` of `r cuts[1,4]` points are off scale, with a maximu
 In panel two, `r cuts[2,2]` of `r cuts[2,4]` points are off scale, with a maximum of `r cuts[2,3]`.
 In panel three, `r cuts[3,2]` of `r cuts[3,4]` points are off scale, with a maximum of `r cuts[3,3]`.
 
-### Table with bins
+## Table with bins
 
 ```{r table-binning}
 reviewed_all %>% 
@@ -815,8 +822,6 @@ reviewed_all %>%
   pivot_wider(id_cols = signal_to_completion_months, names_from = c(site, cancer_type), values_from = Percent) %>% 
   kable()
 ```
-
-\newpage
 
 
 
@@ -859,7 +864,8 @@ rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
 rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
 
-The following table might be useful if it helps explain what's going on and why I say mentioned only 2 levels of race as a factor in the text.
+The following table might be useful if it helps explain what's going on and why I
+mentioned only 2 levels of race as a factor in the text.
 
 All $P$ values are by $\chi^2$.
 
@@ -914,9 +920,12 @@ assoc %>%
 
 The rest of these analyses are just not very illuminating
 
-## Age vs. advanced
+## Age vs.\ advanced
 
-```{r plot-age-facetted, message=FALSE, warning=FALSE}
+- *Turned off:* $2 \times 2$ facet and colored density plot. Allows us to see the barely
+different age peaks. And the little shoulder from colon cancer screening.
+
+```{r plot-age-facetted, eval=FALSE, message=FALSE, warning=FALSE, echo=TRUE}
 ggplot(all_data, aes(Age, fill=Stage, color=Stage)) +
   geom_density(alpha=0.3) +
   facet_grid(rows=vars(cancer_type)  ) +
@@ -1072,7 +1081,9 @@ reviewed_all %>%
   kable()
 ```
 
-```{r ia-plot, message=FALSE, warning=FALSE}
+- Turned off `signal_to_init` vs.\ Age plot. With a `geom_smooth()` by LOESS.
+
+```{r t1-age-plot, message=FALSE, warning=FALSE, eval=FALSE, echo=TRUE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite, site!="VA") %>% 
 ggplot(aes(x=Age, y=signal_to_init)) +
@@ -1082,7 +1093,9 @@ ggplot(aes(x=Age, y=signal_to_init)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
-```{r completion-age-plots, message=FALSE, warning=FALSE}
+- Turned off `init_to_completion` vs.\ Age plot. With a `geom_smooth()` by LOESS.
+
+```{r t2-age-plot, message=FALSE, warning=FALSE, echo=TRUE, eval=FALSE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite, site!="VA") %>% 
 ggplot(aes(x=Age, y=init_to_completion)) +
@@ -1093,7 +1106,12 @@ ggplot(aes(x=Age, y=init_to_completion)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
-```{r init-completion-corr-plots, message=FALSE, warning=FALSE}
+Kept the following plot because it has 3 "significant" $P$ values. In theory, those
+indicate negative correlations. On the plots, you can see them, but honestly, they
+don't especially jump out. A long $t_{12}$ seems to lead to a short $t_{23}$, at least
+by a little bit.
+
+```{r t1-t2-plot, message=FALSE, warning=FALSE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite) %>% 
 ggplot(aes(x=signal_to_init, y=init_to_completion)) +
@@ -1189,7 +1207,11 @@ reviewed_all %>%
   kable()
 ```
 
-```{r simpler-boxplot-for-r1, warning=FALSE}
+- Turned off: $4 \times 2$ boxplot ($x$ axis and color) that shows distribution of
+Workup initiation to completion, also known as `init_to_completion`, or $t_{23}$.
+It is really a subset of the previous $4 \times 3 \times 2$ boxplot.
+
+```{r simpler-boxplot-for-r1, warning=FALSE, eval=FALSE}
 reviewed_all %>% 
   select(site, cancer_type, MOD_definite, init_to_completion) %>% 
   mutate(Years = init_to_completion / 365, .keep = "unused") %>%
@@ -1211,7 +1233,11 @@ reviewed_all %>%
   labs(y = "Workup initiation to completion, y")
 ```
 
-```{r simpler-boxplot-for-r1-ZOOM, warning=FALSE}
+- Turned off: $4 \times 2$ boxplot of
+Workup initiation to completion, same as before, but now $y$ axis zoomed in more,
+and set to days instead of years.
+
+```{r simpler-boxplot-for-r1-ZOOM, warning=FALSE, eval=FALSE}
 reviewed_all %>% 
   select(site, cancer_type, MOD_definite, init_to_completion) %>% 
   filter(
@@ -1292,12 +1318,7 @@ temp_limit_to_mod %>%
 #ggsave("peaks.pdf")
 ```
 
-
-
-
-# APPENDIX: version details, *etc.*
-
-## My to-do list: data and analyses
+# My to-do list: data and analyses
 
 - Comprehensive data
     - [x] `lung_raw`
@@ -1313,7 +1334,7 @@ temp_limit_to_mod %>%
     - [x] Oh dear, what if "date of completion" varies by reviewer.
     - [x] All the fix comments, related to Spearman's $\rho$ handling `NA` values, and stratifying by site and cancer type.
 
-## Reviewers' list
+# Reviewers' list
 
 - Descriptive stats (large scale)
     - flow diagram (R1 C1)
@@ -1329,7 +1350,7 @@ temp_limit_to_mod %>%
     - [x] CIs for percent of MOD (descriptive)
 - [x] Geisinger data
 
-## R libraries
+# R version details
 
 ```{r version, echo=TRUE}
 R.version.string
@@ -1342,25 +1363,25 @@ for (i in 1:length(si$otherPkgs)) {
 }
 ```
 
-## Data
+# Data dimensions and variables
 
-All data:
+*All data:*
 
 ```{r dim-col-comprehensive, echo=TRUE}
 dim(all_data)
 colnames(all_data)
 ```
 
-Chart review data:
+*Chart review data:*
 
 ```{r dim-col-reviews, echo=TRUE}
 dim(reviewed_all)
 colnames(reviewed_all)
 ```
 
-## Tidying summary
+# Tidying summary
 
-List of vars that I actually analyze (see auto-printed list above ):
+List of vars that I actually analyze (see auto-printed list above):
 
 1. `Sex`
 1. Stage (early/advanced)
