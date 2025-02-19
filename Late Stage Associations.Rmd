@@ -885,6 +885,19 @@ In panel one, `r cuts[1,2]` of `r cuts[1,4]` points are off scale, with a maximu
 In panel two, `r cuts[2,2]` of `r cuts[2,4]` points are off scale, with a maximum of `r cuts[2,3]`.
 In panel three, `r cuts[3,2]` of `r cuts[3,4]` points are off scale, with a maximum of `r cuts[3,3]`.
 
+In case someone asks, "Why 200-something points per panel?":
+
+```{r mods-per-stratum, message=FALSE}
+temp_mod_sv %>%
+  count(site, cancer_type, MOD_definite, name) %>%
+  group_by(site, cancer_type, MOD_definite) %>%
+  summarise(max = max(n)) %>% 
+  ungroup() %>% 
+  mutate(total = sum(max)) %>% 
+  kable()
+```
+
+
 ## Table with bins
 
 ```{r table-binning}
