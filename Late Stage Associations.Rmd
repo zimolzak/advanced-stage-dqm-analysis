@@ -83,6 +83,15 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
 rm(colon_raw, lung_raw)  # keep geisinger_comprehensive for later
 ```
 
+```{r exclude-yes-no, echo=TRUE}
+DO_PCP_FILTERING <- TRUE
+
+if (DO_PCP_FILTERING) {
+  all_data <- all_data %>% 
+    filter(HasPCPAfterCutOff == 1)
+}
+```
+
 ```{r tidy-chart-reviews, message=FALSE}
 colnames(lung_geis_raw) <- geis_columns$name
 
@@ -353,7 +362,18 @@ all_data %>%
 all_data %>% 
   count(site, cancer_type, HasPCPAfterCutOff, HasPCPBeforeCutOff) %>% 
   kable()
+
+exclusions <- all_data %>% 
+  count(cancer_type, HasPCPAfterCutOff) %>% 
+  filter(HasPCPAfterCutOff == 0) %>% 
+  select(cancer_type, n)
+
+ex_colon <- exclusions %>% filter(cancer_type=="Colon") %>% pull(n)
+ex_lung  <- exclusions %>% filter(cancer_type=="Lung")  %>% pull(n)
 ```
+
+**For text:** On the basis of PCP visits in VA, we excluded `r ex_lung` patients
+from the lung cancer analysis, and `r ex_colon` patients from the colorectal analysis.
 
 Interpretation of this last table: The combination of no PCP after cutoff
 **and** no PCP before cutoff (the pair (0,0)) doesn't exist. Only (0,1), (1,0),
@@ -665,6 +685,14 @@ table_1_for_later %>%
   replace_na(list(`Geisinger Lung` = "0%")) %>% 
   kable()
 ```
+
+If `DO_PCP_FILTERING` is off, we expect the first row ($n$ for VA Lung and VA Colon,
+respectively) to equal 37949 and 14753. With an advanced stage rate (last row) of:
+
+- 17490 / 37949 (46.1%)
+- 4913 / 14753 (33.3%)
+
+**Current value** of `DO_PCP_FILTERING` is: `r DO_PCP_FILTERING`.
 
 # TABLE 2
 
