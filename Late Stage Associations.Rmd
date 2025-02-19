@@ -83,6 +83,78 @@ all_data <- bind_rows(colon_raw, lung_raw) %>%
 rm(colon_raw, lung_raw)  # keep geisinger_comprehensive for later
 ```
 
+
+
+
+# For editor comment (PCP visit criterion/flow)
+
+```{r definitions}
+percentage_text <- function(numerator, denominator, print_denom = TRUE) {
+  # It appears to be already vectorized.
+  ntext <- as.character(numerator)
+  dtext <- as.character(denominator)
+  ptext <- as.character(round(numerator / denominator * 100, 1))
+  if (print_denom) {
+    final_text <- paste0(ntext, " / ", dtext, " (", ptext, "%)")
+  }
+  else {
+    final_text <- paste0(ntext, " (", ptext, "%)")
+  }
+  return(final_text)
+}
+
+pct_ci_text <- function(numerator, denominator) {
+  low = binconf(numerator, denominator)[,"Lower"]
+  upp = binconf(numerator, denominator)[,"Upper"]
+  ptext <- as.character(round(numerator / denominator * 100, 1))
+  ltext <- as.character(round(low * 100, 1))
+  utext <- as.character(round(upp * 100, 1))
+      
+  final_text <- paste0(ptext, "% (", ltext, "-", utext, ")")
+  return(final_text)
+}
+
+q123ms <- list(
+  q1 = ~quantile(.x, 0.25, na.rm = TRUE),
+  median = ~quantile(.x, 0.5, na.rm = TRUE),
+  q3 = ~quantile(.x, 0.75, na.rm = TRUE),
+  mean = ~round(mean(.x, na.rm=TRUE), 2),
+  sd = ~round(sd(.x, na.rm = TRUE), 2)
+)
+```
+
+```{r pcp-stats, message=FALSE}
+all_data %>%
+  group_by(site, cancer_type) %>%
+  summarise(
+    pts=n(), pcp1=sum(HasPCPBeforeCutOff) ,pcp2=sum(HasPCPAfterCutOff),
+    percent_before_cutoff=percentage_text(pcp1, pts),
+    percent_after_cutoff=percentage_text(pcp2, pts)
+  ) %>% 
+  select(site, cancer_type, percent_before_cutoff, percent_after_cutoff) %>% 
+  kable()
+
+all_data %>% 
+  count(site, cancer_type, HasPCPAfterCutOff, HasPCPBeforeCutOff) %>% 
+  kable()
+
+exclusions <- all_data %>% 
+  count(cancer_type, HasPCPAfterCutOff) %>% 
+  filter(HasPCPAfterCutOff == 0) %>% 
+  select(cancer_type, n)
+
+ex_colon <- exclusions %>% filter(cancer_type=="Colon") %>% pull(n)
+ex_lung  <- exclusions %>% filter(cancer_type=="Lung")  %>% pull(n)
+```
+
+**For text:** On the basis of PCP visits in VA, we excluded `r ex_lung` patients
+from the lung cancer analysis, and `r ex_colon` patients from the colorectal analysis.
+
+Interpretation of this last table: The combination of no PCP after cutoff
+**and** no PCP before cutoff (the pair (0,0)) doesn't exist. Only (0,1), (1,0),
+and (1,1) exist. Seems like we did inclusion criterion where it must be (before
+**or** after). Or it's just that everyone has a PCP visit at some point.
+
 ```{r exclude-yes-no, echo=TRUE}
 DO_PCP_FILTERING <- TRUE
 
@@ -91,6 +163,9 @@ if (DO_PCP_FILTERING) {
     filter(HasPCPAfterCutOff == 1)
 }
 ```
+
+
+
 
 ```{r tidy-chart-reviews, message=FALSE}
 colnames(lung_geis_raw) <- geis_columns$name
@@ -222,41 +297,6 @@ rm(reviewed_geis_colon, reviewed_geis_lung)   #, reviewed_va_lung_colon)
 
 # Preliminary descriptive results
 
-```{r definitions}
-percentage_text <- function(numerator, denominator, print_denom = TRUE) {
-  # It appears to be already vectorized.
-  ntext <- as.character(numerator)
-  dtext <- as.character(denominator)
-  ptext <- as.character(round(numerator / denominator * 100, 1))
-  if (print_denom) {
-    final_text <- paste0(ntext, " / ", dtext, " (", ptext, "%)")
-  }
-  else {
-    final_text <- paste0(ntext, " (", ptext, "%)")
-  }
-  return(final_text)
-}
-
-pct_ci_text <- function(numerator, denominator) {
-  low = binconf(numerator, denominator)[,"Lower"]
-  upp = binconf(numerator, denominator)[,"Upper"]
-  ptext <- as.character(round(numerator / denominator * 100, 1))
-  ltext <- as.character(round(low * 100, 1))
-  utext <- as.character(round(upp * 100, 1))
-      
-  final_text <- paste0(ptext, "% (", ltext, "-", utext, ")")
-  return(final_text)
-}
-
-q123ms <- list(
-  q1 = ~quantile(.x, 0.25, na.rm = TRUE),
-  median = ~quantile(.x, 0.5, na.rm = TRUE),
-  q3 = ~quantile(.x, 0.75, na.rm = TRUE),
-  mean = ~round(mean(.x, na.rm=TRUE), 2),
-  sd = ~round(sd(.x, na.rm = TRUE), 2)
-)
-```
-
 ```{r prep-categor-subtables, message=FALSE}
 compr_n <- all_data %>%
   group_by(site, cancer_type) %>% 
@@ -345,40 +385,6 @@ all_data %>%
   geom_histogram(binwidth = 2) +
   facet_grid(rows=vars(cancer_type))
 ```
-
-## For editor comment (PCP visit criterion/flow)
-
-```{r pcp-stats, message=FALSE}
-all_data %>%
-  group_by(site, cancer_type) %>%
-  summarise(
-    pts=n(), pcp1=sum(HasPCPBeforeCutOff) ,pcp2=sum(HasPCPAfterCutOff),
-    percent_before_cutoff=percentage_text(pcp1, pts),
-    percent_after_cutoff=percentage_text(pcp2, pts)
-  ) %>% 
-  select(site, cancer_type, percent_before_cutoff, percent_after_cutoff) %>% 
-  kable()
-
-all_data %>% 
-  count(site, cancer_type, HasPCPAfterCutOff, HasPCPBeforeCutOff) %>% 
-  kable()
-
-exclusions <- all_data %>% 
-  count(cancer_type, HasPCPAfterCutOff) %>% 
-  filter(HasPCPAfterCutOff == 0) %>% 
-  select(cancer_type, n)
-
-ex_colon <- exclusions %>% filter(cancer_type=="Colon") %>% pull(n)
-ex_lung  <- exclusions %>% filter(cancer_type=="Lung")  %>% pull(n)
-```
-
-**For text:** On the basis of PCP visits in VA, we excluded `r ex_lung` patients
-from the lung cancer analysis, and `r ex_colon` patients from the colorectal analysis.
-
-Interpretation of this last table: The combination of no PCP after cutoff
-**and** no PCP before cutoff (the pair (0,0)) doesn't exist. Only (0,1), (1,0),
-and (1,1) exist. Seems like we did inclusion criterion where it must be (before
-**or** after). Or it's just that everyone has a PCP visit at some point.
 
 ## For R1 comment (missingness)
 
@@ -693,6 +699,11 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 - 4913 / 14753 (33.3%)
 
 **Current value** of `DO_PCP_FILTERING` is: `r DO_PCP_FILTERING`.
+
+\newpage
+
+
+
 
 # TABLE 2
 
