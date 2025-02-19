@@ -849,6 +849,20 @@ fig1
 ggsave("fig1.png", width = 6.5, height=7)
 ```
 
+## Table of median months
+
+```{r mod-severity-table-for-abstract, message=FALSE}
+temp_mod_sv %>% 
+  group_by(Population_s, name) %>% 
+  summarise(median_yrs = median(value)) %>% 
+  mutate(median_mo = round(median_yrs * 12, 1)) %>% 
+  select(!median_yrs) %>% 
+  arrange(name, desc(Population_s)) %>% 
+  pivot_wider(values_from = median_mo, names_from = Population_s) %>% 
+  kable()
+```
+
+
 ## About off-scale points
 
 ```{r some-off-scale-counts, message=FALSE}
