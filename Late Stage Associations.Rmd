@@ -836,7 +836,10 @@ ggplot(aes(y = value, x = Population, fill=site)) +
   geom_boxplot(staplewidth = 0.15, outlier.shape = 1, outlier.alpha = 0.7) +
   coord_cartesian(ylim = c(0, Y_MAX)) +
   facet_grid(cols = vars(name)) +
-  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  scale_x_discrete(
+    guide = guide_axis(n.dodge = 2),
+    limits = c("VA\nLung", "VA\nColon", "Geisinger\nLung", "Geisinger\nColon")
+  ) +
   labs(y = "Time, y") +
   theme(panel.grid.major.x = element_blank(), legend.position = "none") +
   scale_fill_hue(c=50)
