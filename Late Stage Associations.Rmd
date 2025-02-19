@@ -211,10 +211,7 @@ rm(reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon)
 
 
 
-
-
-
-# Descriptives: comprehensive data
+# Descriptive stats
 
 ```{r definitions}
 percentage_text <- function(numerator, denominator, print_denom = TRUE) {
@@ -250,8 +247,6 @@ q123ms <- list(
   sd = ~round(sd(.x, na.rm = TRUE), 2)
 )
 ```
-
-## Table 1 prep work only
 
 ```{r prep-categor-subtables, message=FALSE}
 compr_n <- all_data %>%
@@ -316,7 +311,7 @@ compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   )
 ```
 
-```{r table-descr-comprehensive}
+```{r table-1-descr-comprehensive}
 table_1_for_later <- bind_rows(compr_n, compr_sex, compr_race, compr_age) %>% 
   ungroup() %>% 
   pivot_wider(names_from = site, values_from = c(Colon, Lung), names_glue = "{site}_{.value}") %>% 
@@ -330,8 +325,6 @@ table_1_for_later <- bind_rows(compr_n, compr_sex, compr_race, compr_age) %>%
     .keep = "unused"
   )
 ```
-
-Table will be rendered later (pending Geisinger chart review data).
 
 ```{r cleanup-after-t1}
 rm(compr_n, compr_adv, compr_age, compr_race, compr_sex)
@@ -365,7 +358,7 @@ all_data %>%
 Interpretation of this last table: The combination of no PCP after cutoff
 **and** no PCP before cutoff (the pair (0,0)) doesn't exist. Only (0,1), (1,0),
 and (1,1) exist. Seems like we did inclusion criterion where it must be (before
-**or** after).
+**or** after). Or it's just that everyone has a PCP visit at some point.
 
 ## For R1 comment (missingness)
 
@@ -381,12 +374,7 @@ all_data %>%
   kable()
 ```
 
-\newpage
-
-
-
-
-# Descriptives: chart review 
+## Proportions table (*very* detailed)
 
 ```{r generate-table-ci}
 va_population_ci <- all_data %>%
@@ -460,8 +448,6 @@ chart_rev_confint <- bind_rows(
   )) %>% 
   arrange(desc(site), desc(cancer_type), Characteristic)
 ```
-
-## Proportions table (*very* detailed)
 
 ```{r kable-descr-reviews}
 # Print the detailed CI table now.
@@ -832,7 +818,7 @@ reviewed_all %>%
 
 
 
-# Associations: comprehensive data
+# Association stats
 
 ```{r construct-pvals}
 colon <- all_data %>% filter(cancer_type == "Colon")
