@@ -2,8 +2,8 @@
 title: "Late Stage Associations"
 author: "Andrew Zimolzak, MD, MMSc"
 date: "`r Sys.Date()`"
-#output: pdf_document
-output: word_document
+output: pdf_document
+#output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -211,7 +211,7 @@ rm(reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon)
 
 
 
-# Descriptive stats
+# Preliminary descriptive results
 
 ```{r definitions}
 percentage_text <- function(numerator, denominator, print_denom = TRUE) {
@@ -502,6 +502,11 @@ chart_rev_confint %>%
 
 \newpage
 
+
+
+
+# TABLE 1 
+
 ```{r functions-continuous-vars}
 median_text_scalar <- function(m, q1, q3){
   vec <- c(
@@ -528,8 +533,6 @@ mean_text_scalar <- function(m, s){
 median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 ```
-
-## TABLE 1 
 
 ```{r kable-descriptives-allvars-strat, message=FALSE}
 t1_df <- data.frame(
@@ -629,7 +632,7 @@ table_1_for_later %>%
   kable()
 ```
 
-## TABLE 2
+# TABLE 2
 
 Between the two of these tables, they should have everything that's in the proportions plot.
 
@@ -640,7 +643,7 @@ t1t2 %>%
   kable()
 ```
 
-## Age plot
+## Age descriptive boxplot
 
 ```{r age-definitive, warning=FALSE}
 temp_boxplot_data <- reviewed_all %>%
@@ -723,7 +726,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   scale_fill_hue(c=50)
 ```
 
-### FIGURE 1: MOD SEVERITY. INCLUDE. Limited to MOD only
+# FIGURE 1: MOD SEVERITY. INCLUDE. Limited to MOD only
 
 ```{r multi-box-MOD-severity, message=FALSE}
 temp_mod_sv <- reviewed_all %>% 
@@ -818,7 +821,7 @@ reviewed_all %>%
 
 
 
-# Association stats
+# TABLE 3? Race and sex $\sim$ advanced
 
 ```{r construct-pvals}
 colon <- all_data %>% filter(cancer_type == "Colon")
@@ -856,9 +859,7 @@ rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
 rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
 
-## TABLE 3? Race and sex vs.\ advanced
-
-Might be useful if it helps explain what's going on and why I say mentioned only 2 levels of race as a factor in the text.
+The following table might be useful if it helps explain what's going on and why I say mentioned only 2 levels of race as a factor in the text.
 
 All $P$ values are by $\chi^2$.
 
@@ -1017,7 +1018,7 @@ reviewed_all %>%
   kable()
 ```
 
-$\rho$ coefficients, with "*" meaning significant at $P < 0.05$.
+Below are $\rho$ coefficients, with "*" meaning significant at $P < 0.05$:
 
 ```{r correlations-full-table, message=FALSE, warning=FALSE}
 # warnings are about P value with ties.
