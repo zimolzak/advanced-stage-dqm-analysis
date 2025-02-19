@@ -205,7 +205,7 @@ reviewed_all <- bind_rows(
 ```{r remove-chart-rev-bits}
 rm(lung_va_raw, colon_va_raw, lung_geis_raw, colon_geis_raw)
 rm(coltype_spec, geis_columns)
-rm(reviewed_geis_colon, reviewed_geis_lung, reviewed_va_lung_colon)
+rm(reviewed_geis_colon, reviewed_geis_lung)   #, reviewed_va_lung_colon)
 ```
 
 
@@ -473,6 +473,40 @@ review_ci_concise <- chart_rev_confint %>%
   filter(Characteristic != "Race NA")
 ```
 
+### Aside
+
+Why do the denominators in that detailed table vary a lot?
+
+```{r summary-NA}
+reviewed_all %>% 
+  select(MOD_definite, Sex, signal_present) %>% 
+  summary()
+```
+
+Answer: because we do `filter(!is.na(...))` on certain vars to get the denominators.
+But how can there be `NA` values for `MOD_definite` and `signal_present`? Shouldn't
+reviewers always log those? Let's look at the times when MOD is listed as `NA`
+(here in VA data only):
+
+```{r eda}
+reviewed_va_lung_colon %>% 
+  filter(is.na(DxMOD)) %>% 
+  select(site, cancer_type, RegConfCancerType, RegConfDxDate, StageNewDx, StageDataRecorded, DxMOD) %>% 
+  kable()
+```
+
+Answer: When the dQM "thinks" there is a real lung cancer diagnosis, on a certain
+date, and it's a first-time diagnosis, and it's a certain stage, *sometimes* the
+algorithm is wrong. Reviewers didn't formally look for MOD in those cases. I don't
+think there is one "right" way to treat the arithmetic here. Which question do you
+want to answer?
+
+a. Of all 100 charts that the dQM "thinks" are incident advanced colorectal, how many have MOD? (kind of like PPV)
+b. Of all 95 charts with *actual* incident advanced colorectal, how many have MOD? (more like MOD rate)
+
+Decided: I'm taking option b. That keeps the analysis as-is, with the denominators that vary a bit.
+That is also most consistent across VA vs.\ Geisinger data.
+
 ## Proportions plot
 
 ```{r plot-ci}
@@ -639,6 +673,10 @@ Between the two of these tables, they should have everything that's in the propo
 ```{r table2}
 t1t2 %>% 
   filter(order >= 3 ) %>% 
+  mutate(Characteristic = case_when(
+    Characteristic == "Cancer not considered" ~ "Cancer not considered, given signal",
+    .default = Characteristic
+  )) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
   kable()
 ```
