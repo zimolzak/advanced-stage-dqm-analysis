@@ -50,6 +50,7 @@ library(knitr)
 library(tidyr)
 library(Hmisc)
 library(forcats)
+library(stringr)
 # consider later: clean_names() from {janitor} 
 
 knitr::opts_chunk$set(echo = FALSE)  # Sets the default to "Run but don't show code."
@@ -335,7 +336,7 @@ q123ms <- list(
 )
 ```
 
-## TABLE 1: summarizing all vars on whole population
+## Table 1 prep work only
 
 ```{r prep-categor-subtables, message=FALSE}
 compr_n <- all_data %>%
@@ -400,7 +401,6 @@ compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   )
 ```
 
-
 ```{r table-descr-comprehensive}
 table_1_for_later <- bind_rows(compr_n, compr_sex, compr_race, compr_age) %>% 
   ungroup() %>% 
@@ -422,16 +422,12 @@ Table will be rendered later (pending Geisinger chart review data).
 rm(compr_n, compr_adv, compr_age, compr_race, compr_sex)
 ```
 
-## Figure: age histog
-
 ```{r plot-age-simple, eval=FALSE, include=FALSE}
 all_data %>% 
   ggplot(aes(x=Age)) +
   geom_histogram(binwidth = 2) +
   facet_grid(rows=vars(cancer_type))
 ```
-
-Output turned off---we do this better in a boxplot later.
 
 \newpage
 
@@ -473,6 +469,7 @@ all_data %>%
 ```
 
 \newpage
+
 
 
 
@@ -551,7 +548,7 @@ chart_rev_confint <- bind_rows(
   arrange(desc(site), desc(cancer_type), Characteristic)
 ```
 
-## Proportions table
+## Proportions table (*very* detailed)
 
 ```{r kable-descr-reviews}
 # Print the detailed CI table now.
@@ -735,6 +732,8 @@ table_1_for_later %>%
 
 ## TABLE 2
 
+Between the two of these tables, they should have everything that's in the proportions plot.
+
 ```{r table2}
 t1t2 %>% 
   filter(order >= 3 ) %>% 
@@ -742,10 +741,9 @@ t1t2 %>%
   kable()
 ```
 
-
 ## Age plot
 
-```{r age-definitive}
+```{r age-definitive, warning=FALSE}
 temp_boxplot_data <- reviewed_all %>%
   filter(site == "Geisinger") %>% 
   select(site, cancer_type, Age) %>% 
@@ -773,9 +771,6 @@ temp_boxplot_data %>%
   labs(x = "") +
   scale_fill_hue(c=50)
 ```
-
-
-
 
 ## Temporality figures and table
 
@@ -829,7 +824,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   scale_fill_hue(c=50)
 ```
 
-## FIGURE 1: MOD SEVERITY. INCLUDE. Limited to MOD only
+### FIGURE 1: MOD SEVERITY. INCLUDE. Limited to MOD only
 
 ```{r multi-box-MOD-severity, message=FALSE}
 temp_mod_sv <- reviewed_all %>% 
@@ -865,26 +860,41 @@ ggplot(aes(y = value, x = Population, fill=site)) +
 fig1
 
 ggsave("fig1.png", width = 6.5, height=7)
+```
 
+```{r some-off-scale-counts, message=FALSE}
 temp_mod_sv %>% 
   filter(value > Y_MAX) %>% 
   select(site, cancer_type, name, value) %>% 
   group_by(name, site, cancer_type) %>% 
   summarise(n = n(), max = round(max(value), 1)) %>% 
   group_by(name) %>% 
-  mutate(subtot = sum(n)) %>% 
+  mutate(
+    subtot = sum(n),
+    name = str_replace(name, "\n", " ")
+    ) %>% 
   kable()
 
 cuts <- temp_mod_sv %>% 
-  filter(value > Y_MAX) %>% 
+  # filter(value > Y_MAX) %>% 
   select(site, cancer_type, name, value) %>% 
   group_by(name) %>% 
-  summarise(n = n(), max = round(max(value), 1))
+  summarise(
+    n_cut_off = sum(value > Y_MAX),
+    max = round(max(value), 1),
+    total = n()
+  )
+
+cuts %>% 
+  mutate(name = str_replace(name, "\n", " ")) %>% 
+  kable()
 ```
 
-In panel one, `r cuts[1,2]` points are off scale, with a maximum of `r cuts[1,3]`.
-In panel two, `r cuts[2,2]` points are off scale, with a maximum of `r cuts[2,3]`.
-In panel three, `r cuts[3,2]` points are off scale, with a maximum of `r cuts[3,3]`.
+In panel one, `r cuts[1,2]` of `r cuts[1,4]` points are off scale, with a maximum of `r cuts[1,3]`.
+In panel two, `r cuts[2,2]` of `r cuts[2,4]` points are off scale, with a maximum of `r cuts[2,3]`.
+In panel three, `r cuts[3,2]` of `r cuts[3,4]` points are off scale, with a maximum of `r cuts[3,3]`.
+
+### Table with bins
 
 ```{r table-binning}
 reviewed_all %>% 
@@ -947,7 +957,9 @@ rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
 rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
 
-## Race and sex vs.\ advanced - somewhat useful table
+## TABLE 3? Race and sex vs.\ advanced
+
+Might be useful if it helps explain what's going on and why I say mentioned only 2 levels of race as a factor in the text.
 
 All $P$ values are by $\chi^2$.
 
@@ -990,6 +1002,15 @@ assoc %>%
   # neat trick to add close paren
   kable()
 ```
+
+\newpage
+
+
+
+
+# APPENDIX
+
+The rest of these analyses are just not very illuminating
 
 ## Age vs. advanced
 
@@ -1040,9 +1061,6 @@ maldiff <- abs(mala - mall)
 
 No difference in age between colon advanced and colon early. Lung advanced skews slightly earlier than lung early (`r r2(mala)` vs. `r r2(mall)` years, difference of `r r2(maldiff)`).
 
-
-
-
 # Associations: chart review
 
 ## Time vs. gender
@@ -1077,7 +1095,7 @@ reviewed_all %>%
   kable()
 ```
 
-## Age vs. temporality
+## Age vs.\ temporality (continuous vs.\ continuous)
 
 ```{r helper-fns}
 p <- function(spear){
@@ -1154,8 +1172,6 @@ reviewed_all %>%
   kable()
 ```
 
-### Initiation time vs. age
-
 ```{r ia-plot, message=FALSE, warning=FALSE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite, site!="VA") %>% 
@@ -1165,10 +1181,6 @@ ggplot(aes(x=Age, y=signal_to_init)) +
   scale_y_sqrt() +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
-
-Is it Spearman that does not like `NA`? **No.** Really it's that `temporal` only ever used to use lung! It ignored colon.
-
-### Completion time vs. age
 
 ```{r completion-age-plots, message=FALSE, warning=FALSE}
 reviewed_all %>% 
@@ -1181,11 +1193,7 @@ ggplot(aes(x=Age, y=init_to_completion)) +
   facet_grid(rows=vars(cancer_type), cols=vars(site))
 ```
 
-\newpage
-
-### Initiation time vs. completion time
-
-```{r init-completion-corr-plots, warning=FALSE}
+```{r init-completion-corr-plots, message=FALSE, warning=FALSE}
 reviewed_all %>% 
   filter(signal_present=="Yes", MOD_definite) %>% 
 ggplot(aes(x=signal_to_init, y=init_to_completion)) +
@@ -1242,7 +1250,6 @@ p_text_for_join <- twelve_tests %>%
   pivot_longer(ends_with("_t"), names_pattern = "(.*)_t", values_to = "p_text") %>% 
   select(site, cancer_type, name, p_text)
 ```
-
 
 ```{r assoc-most-detailed-multi-box, message=FALSE, warning=FALSE}
 reviewed_all %>% 
@@ -1328,11 +1335,9 @@ reviewed_all %>%
   labs(y = "Workup initiation to completion (days)", title = "Zoomed in")
 ```
 
-
 useful commit IDs: `a0cd45253` put it in, `c228851` took it out.
 
-
-## PEAKS PLOT
+## "Peaks" plot
 
 ```{r wacky-time-plot, warning=FALSE}
 temp_limit_to_mod <- reviewed_all %>%
