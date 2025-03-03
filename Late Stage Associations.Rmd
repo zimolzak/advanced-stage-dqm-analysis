@@ -850,7 +850,7 @@ Y_MAX <- 6  # 8 almost okay but boring
 fig1 <- temp_mod_sv %>% 
   mutate(Population = Population_n) %>% 
 ggplot(aes(y = value, x = Population, fill=site)) +
-  geom_boxplot(staplewidth = 0.15, outlier.shape = 1, outlier.alpha = 0.7) +
+  geom_boxplot(staplewidth = 0.15, outlier.shape = 1) +
   coord_cartesian(ylim = c(0, Y_MAX)) +
   facet_grid(cols = vars(name)) +
   scale_x_discrete(
@@ -864,6 +864,7 @@ ggplot(aes(y = value, x = Population, fill=site)) +
 fig1
 
 ggsave("fig1.png", width = 6.5, height=7)
+ggsave("fig1.eps", width = 6.5, height=7)
 ```
 
 ## Table of median months
