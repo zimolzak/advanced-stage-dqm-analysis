@@ -8,6 +8,7 @@
 *~
 *.zip
 *.png
+*.eps
 .DS_Store
 
 Late Stage CRC Final DU 1-26-22.csv
