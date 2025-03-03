@@ -360,7 +360,8 @@ compr_adv <- rbind(  # FIXME_maybe - should we use bind_rows() ?
   )
 ```
 
-```{r table-1-descr-comprehensive}
+```{r DF-table-1-for-later}
+# Basically sex, race, age, stage, mainly on VA data.
 table_1_for_later <- bind_rows(compr_n, compr_sex, compr_race, compr_age) %>% 
   ungroup() %>% 
   pivot_wider(names_from = site, values_from = c(Colon, Lung), names_glue = "{site}_{.value}") %>% 
@@ -402,7 +403,8 @@ all_data %>%
 
 ## Proportions table (*very* detailed)
 
-```{r generate-table-ci}
+```{r DF-chart-rev-confint}
+# The chart review proportions that become Table 2.
 va_population_ci <- all_data %>%
   group_by(site, cancer_type) %>% 
   count(Sex) %>% 
@@ -419,6 +421,8 @@ chart_rev_confint <- bind_rows(
   # Each sub-table is like:
   # site, cancer_type, Fact, Val, n, d
   # VA,   Colon,       Sex,  F,   55, 100.
+  
+  # FIXME - change how we throw out NAs?
   
   reviewed_all %>% group_by(site, cancer_type) %>% 
     count(site, cancer_type, MOD_definite) %>% filter(!is.na(MOD_definite)) %>%
@@ -444,6 +448,10 @@ chart_rev_confint <- bind_rows(
     count(site, cancer_type, Race) %>%
     mutate(d = sum(n), Fact = "Race", Val=as.character(Race)) %>%  
     select(site, cancer_type, Fact, Val, n, d),
+  reviewed_all %>% group_by(site, cancer_type) %>% 
+    filter(MOD_definite) %>% count(signal_present) %>% 
+    mutate(d = sum(n), Fact = "Cancer signal present, given MOD", Val=signal_present) %>% 
+    select(site, cancer_type, Fact, Val, n, d),
   va_population_ci
 ) %>% 
   mutate(
@@ -461,7 +469,8 @@ chart_rev_confint <- bind_rows(
       (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
       (Fact == "Ca considered" & Val == "No") |  # Assume Unsure = considered.
       (Fact == "Ever declined screening" & Val == "Yes") |
-      Fact == "Race"
+      Fact == "Race" |
+      (Fact == "Cancer signal present, given MOD" & Val == "No")
   ) %>% 
   unite(col=Characteristic, Fact, Val, sep=" ") %>%
   mutate(Characteristic = case_when(
@@ -470,12 +479,11 @@ chart_rev_confint <- bind_rows(
     Characteristic == "Ever declined screening Yes" ~ 'Declined screening',
     Characteristic == "MOD TRUE" ~ 'MOD present',
     Characteristic == "Sex M" ~ 'Male',
+    Characteristic == "Cancer signal present, given MOD No" ~ 'Missed screening, given MOD',
     .default = Characteristic
   )) %>% 
   arrange(desc(site), desc(cancer_type), Characteristic)
-```
 
-```{r kable-descr-reviews}
 # Print the detailed CI table now.
 chart_rev_confint %>%
   select(site, cancer_type, Characteristic, Percentage, wilson.low, wilson.upp) %>% 
@@ -484,7 +492,9 @@ chart_rev_confint %>%
   unite(col=Percent_CI, Percentage, Wilson_CI, sep = " ") %>% 
   pivot_wider(names_from = c(site, cancer_type), values_from = Percent_CI) %>% 
   kable()
+```
 
+```{r DF-review-ci-concise}
 # Prepare concise CI table for later. We do bind_rows() on it later: "TABLE 1"
 review_ci_concise <- chart_rev_confint %>%
   select(site, cancer_type, Characteristic, P_CI_short) %>% 
@@ -546,8 +556,8 @@ chart_rev_confint %>%
   geom_errorbar(aes(ymin = wilson.low, ymax = wilson.upp), position = "dodge", width=0.3, color="#222222", linewidth = 0.3) +
   geom_point(position= position_dodge(width = 0.3)) +
   scale_x_discrete(
-    guide = guide_axis(n.dodge = 3),
-    # labels = c("Cancer not\nconsidered", 'Cancer signal\npresent', 'Declined\nscreening', 'MOD present', 'Male')
+    guide = guide_axis(n.dodge = 1),
+    labels = c("Ca. not\nconsid.", 'Cancer\nsignal', 'Declined\nscreen', 'Male', 'Screening\nMOD', 'MOD')
   ) +
   ylim(0,1) +
   labs(x = "Patient Characteristic", y = "Proportion of Patients") +
@@ -594,7 +604,7 @@ median_text <- Vectorize(median_text_scalar)
 mean_text <- Vectorize(mean_text_scalar)
 ```
 
-```{r kable-descriptives-allvars-strat, message=FALSE}
+```{r DF-t1t2, message=FALSE}
 t1_df <- data.frame(
   Characteristic_short = c(
     "Age",
@@ -611,9 +621,10 @@ t1_df <- data.frame(
     "Black",
     "Hispanic",
     "Other",
-    "n"
+    "n",
+    "Missed screening, given MOD"
   ),
-  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5, 2.1, 2.15, 2.2, 2.3, 0),
+  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5, 2.1, 2.15, 2.2, 2.3, 0, 5.9),
   Characteristic = c(
     "Age, y",
     "Cancer signal to workup initiation, d",
@@ -629,7 +640,8 @@ t1_df <- data.frame(
     "Black",
     "Hispanic",
     "Other",
-    "n"
+    "n",
+    "Missed screening, given MOD"
   )
 )
 
@@ -663,6 +675,7 @@ t1t2 <- reviewed_all %>%
   arrange(order) %>% 
   select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
 
+# Just print the Table 1 as a kable().
 table_1_for_later %>% 
   mutate(Characteristic = case_when(
     Characteristic == "M" ~ "Male",
@@ -710,6 +723,10 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 Between the two of these tables, they should have everything that's in the proportions plot.
 
 ```{r table2}
+# FIXME - maybe should include denom later. See the other FIXME, above.
+# See Kesselheim et al. Prevalence and Predictors of Generic Drug Skepticism Among Physicians.
+# Maybe should change how we do the denoms too. See above. not exclude NA?
+
 t1t2 %>% 
   filter(order >= 3 ) %>% 
   mutate(Characteristic = case_when(
@@ -1015,6 +1032,19 @@ assoc %>%
   # neat trick to add close paren
   kable()
 ```
+
+# Screening
+
+```{r screening}
+reviewed_all %>% 
+  group_by(site, cancer_type) %>% 
+  filter(MOD_definite) %>% 
+  count(signal_present) %>% 
+  mutate(total_MODs = sum(n)) %>% 
+  filter(signal_present == "No")
+```
+
+
 
 **End of the important outputs.**
 
