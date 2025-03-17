@@ -165,7 +165,7 @@ if (DO_PCP_FILTERING) {
 ```
 
 
-
+## Continue tidying
 
 ```{r tidy-chart-reviews, message=FALSE}
 colnames(lung_geis_raw) <- geis_columns$name
@@ -272,7 +272,8 @@ reviewed_all <- bind_rows(
     signal_present, cancer_dx_considered, MOD_definite,
     signal_date, dx_eval_init_date, dx_eval_complete_date,
     Reviewer,
-    screening_performed, screening_declined, screening_offered
+    screening_performed, screening_declined, screening_offered,
+    signal_type
   ) %>% 
   mutate(
     across(c(site, cancer_type), as.factor),
@@ -824,6 +825,25 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   theme(panel.grid.major.x = element_blank(), legend.position = "none") +
   scale_fill_hue(c=50)
 ```
+
+## Distribution of symptoms
+
+```{r distribution-sx}
+reviewed_all %>% 
+  mutate(signal_type = case_when(
+    signal_type == "imaging in general (should already be covered in dropdown list)" ~ "Imaging",
+    signal_type == "Cough (Worsening persistent cough/bronchitis or new description of chronic cough lasting > 8 weeks.)" ~ "Cough",
+    signal_type == "weight loss (Provider-acknowledged unexplained weight loss or other unexplained weight loss > 10 lbs in addition to respiratory symptoms)" ~ "Weight loss",
+    signal_type == "recurrent bronchitis/pneumonia (an index infection, followed by 2nd pneumonia at least 1 month after index, no more than 1 year after index.)" ~ "Recurrent bronchitis/pneumonia",
+    .default = signal_type
+  )) %>% 
+  count(site, cancer_type, signal_type) %>% 
+  arrange(desc(site), desc(cancer_type), desc(n)) %>% 
+  kable()
+```
+
+
+
 
 # FIGURE 1: MOD SEVERITY. INCLUDE. Limited to MOD only
 
