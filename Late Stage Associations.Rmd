@@ -165,6 +165,8 @@ if (DO_PCP_FILTERING) {
 ```
 
 
+
+
 # Continue tidying manual review data
 
 ```{r tidy-chart-reviews, message=FALSE}
@@ -319,6 +321,8 @@ reviewed_all <- bind_rows(
     signal_to_completion = as.numeric(dx_eval_complete_date - signal_date)
   )
 ```
+
+## Confirm some things about cancer signal symptom coding
 
 Just confirming that this source variable only goes up to 12. Not 14 like in the Word doc:
 
