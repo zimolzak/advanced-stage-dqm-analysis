@@ -485,6 +485,7 @@ va_population_ci <- all_data %>%
 
 # Big important data frame coming.
 # One of the last times you see actual numeric values rather than character.
+# FIXME - left off here, 2025-03-18. Inspect this data.frame.
 
 chart_rev_confint <- bind_rows(
   # Build up "sub-tables," one for each of 4 categorical vars of interest.
@@ -495,36 +496,50 @@ chart_rev_confint <- bind_rows(
   
   # FIXME - change how we throw out NAs?
   
-  reviewed_all %>% group_by(site, cancer_type) %>% 
-    count(site, cancer_type, MOD_definite) %>% filter(!is.na(MOD_definite)) %>%
+  reviewed_all %>% 
+    group_by(site, cancer_type) %>% 
+    count(site, cancer_type, MOD_definite) %>% 
+    filter(!is.na(MOD_definite)) %>%
     mutate(d = sum(n), Fact = "MOD", Val=as.character(MOD_definite)) %>% 
     select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% group_by(site, cancer_type) %>% 
-    count(site, cancer_type, Sex) %>% filter(!is.na(Sex)) %>%
+  reviewed_all %>% 
+    group_by(site, cancer_type) %>% 
+    count(site, cancer_type, Sex) %>% 
+    filter(!is.na(Sex)) %>%
     mutate(d = sum(n), Fact = "Sex", Val=as.character(Sex)) %>% 
     select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% group_by(site, cancer_type) %>% 
-    count(site, cancer_type, signal_present) %>% filter(!is.na(signal_present)) %>%
+  reviewed_all %>% 
+    group_by(site, cancer_type) %>% 
+    count(site, cancer_type, signal_present) %>% 
+    filter(!is.na(signal_present)) %>%
     mutate(d = sum(n), Fact = "Ca signal", Val=as.character(signal_present)) %>% 
     select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% group_by(site, cancer_type) %>% 
-    filter(!is.na(cancer_dx_considered)) %>% count(site, cancer_type, cancer_dx_considered) %>%
+  reviewed_all %>% 
+    group_by(site, cancer_type) %>% 
+    filter(!is.na(cancer_dx_considered)) %>% 
+    count(site, cancer_type, cancer_dx_considered) %>%
     mutate(d = sum(n), Fact = "Ca considered", Val=as.character(cancer_dx_considered)) %>%  
     select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% group_by(site, cancer_type) %>% 
+  reviewed_all %>% 
+    group_by(site, cancer_type) %>% 
     count(site, cancer_type, screening_declined) %>%
+    # Note: no filter(!is.na())
     mutate(d = sum(n), Fact = "Ever declined screening", Val=as.character(screening_declined)) %>%  
     select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% group_by(site, cancer_type) %>% 
+  reviewed_all %>% 
+    group_by(site, cancer_type) %>% 
     count(site, cancer_type, Race) %>%
+    # Note: no filter(!is.na())
     mutate(d = sum(n), Fact = "Race", Val=as.character(Race)) %>%  
     select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% group_by(site, cancer_type) %>% 
-    filter(MOD_definite) %>% count(signal_present) %>% 
+  reviewed_all %>% 
+    group_by(site, cancer_type) %>% 
+    filter(MOD_definite) %>% # There is a filter but it's different. Not to do with is.na(MOD)
+    count(signal_present) %>% 
     mutate(d = sum(n), Fact = "Cancer signal present, given MOD", Val=signal_present) %>% 
     select(site, cancer_type, Fact, Val, n, d),
   va_population_ci
-) %>% 
+) %>%  # End of very big bind_rows().
   mutate(
     Percentage = percentage_text(n, d),
     P_CI_short = pct_ci_text(n, d),
@@ -544,7 +559,7 @@ chart_rev_confint <- bind_rows(
       (Fact == "Cancer signal present, given MOD" & Val == "No")
   ) %>% 
   unite(col=Characteristic, Fact, Val, sep=" ") %>%
-  mutate(Characteristic = case_when(
+  mutate(Characteristic = case_when(  # Rename some cell contents for better readability.
     Characteristic == "Ca considered No" ~ "Cancer not considered",
     Characteristic == "Ca signal Yes" ~ "Cancer signal present",
     Characteristic == "Ever declined screening Yes" ~ 'Declined screening',
