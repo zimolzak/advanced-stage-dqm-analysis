@@ -165,7 +165,7 @@ if (DO_PCP_FILTERING) {
 ```
 
 
-## Continue tidying
+# Continue tidying manual review data
 
 ```{r tidy-chart-reviews, message=FALSE}
 colnames(lung_geis_raw) <- geis_columns$name
@@ -222,6 +222,7 @@ reviewed_geis_colon <- colon_geis_raw %>%
     dx_eval_init_date = as.Date(`When was cancer-related diagnostic evaluation initiated?`),
     dx_eval_complete_date = as.Date(`When was the evaluation completed?`),
     signal_type = `What was the earliest cancer signal recorded?`,  # not as.factor
+    signal_other_text = `Other(Specify):...23`,
     .keep = "unused"
   ) %>% 
   relocate(
@@ -305,7 +306,7 @@ reviewed_all <- bind_rows(
     signal_date, dx_eval_init_date, dx_eval_complete_date,
     Reviewer,
     screening_performed, screening_declined, screening_offered,
-    signal_type
+    signal_type, signal_other_text
   ) %>% 
   mutate(
     across(c(site, cancer_type), as.factor),
@@ -346,7 +347,6 @@ reviewed_geis_lung %>%
   count(signal_type) %>% 
   kable()
 ```
-
 
 ```{r remove-chart-rev-bits}
 rm(lung_va_raw, colon_va_raw, lung_geis_raw, colon_geis_raw)
@@ -887,30 +887,86 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
   scale_fill_hue(c=50)
 ```
 
-## Distribution of symptoms
+
+
+
+# TABLE 3? Distribution of symptoms
 
 ```{r distribution-sx}
 reviewed_all %>% 
   filter(signal_present == "Yes") %>% 
-  mutate(signal_type = case_when(  # compare to lines 233 decode
-    signal_type == "imaging in general (should already be covered in dropdown list)" ~ "Imaging in general",
-    signal_type == "Cough (Worsening persistent cough/bronchitis or new description of chronic cough lasting > 8 weeks.)" ~ "Cough",
-    signal_type == "weight loss (Provider-acknowledged unexplained weight loss or other unexplained weight loss > 10 lbs in addition to respiratory symptoms)" ~ "Weight loss",
-    signal_type == "recurrent bronchitis/pneumonia (an index infection, followed by 2nd pneumonia at least 1 month after index, no more than 1 year after index.)" ~ "Recurrent bronchitis/pneumonia",
-    signal_type == "CT Imaging Finding" ~ "CT Imaging Finding",  # save this from sentence case
-    is.na(signal_type) ~ "Other",  # Fold the rare NA values into Other.
-    .default = str_to_sentence(signal_type)
-  )) %>% 
+  mutate(
+    signal_type = case_when(  # Compare to lines 233, "decode".
+      signal_type == "imaging in general (should already be covered in dropdown list)" ~ "Imaging in general",
+      signal_type == "Cough (Worsening persistent cough/bronchitis or new description of chronic cough lasting > 8 weeks.)" ~ "Cough",
+      signal_type == "weight loss (Provider-acknowledged unexplained weight loss or other unexplained weight loss > 10 lbs in addition to respiratory symptoms)" ~ "Weight loss",
+      signal_type == "recurrent bronchitis/pneumonia (an index infection, followed by 2nd pneumonia at least 1 month after index, no more than 1 year after index.)" ~ "Recurrent bronchitis/pneumonia",
+      signal_type == "CT Imaging Finding" ~ "CT Imaging Finding",  # save this from sentence case
+      is.na(signal_type) ~ "Other: misc.",  # Fold the rare NA values into Other.
+      str_like(signal_other_text, "%pain%") ~ "Other: pain",
+      str_like(signal_other_text, "%ida%") ~ "Iron deficiency anemia",  # merge
+      str_like(signal_other_text, "%dec hb%") ~ "Other: anemia, unspecified",
+      str_like(signal_other_text, "%anemia%") ~ "Other: anemia, unspecified",
+      str_like(signal_other_text, "%blood%") ~ "Blood in stool",  # merge
+      str_like(signal_other_text, "%discomf%") ~ "Other: pain",
+      str_like(signal_other_text, "%loss%") ~ "Other: weight loss",
+      str_like(signal_other_text, "%diarrh%") ~ "Other: bowel habits",
+      str_like(signal_other_text, "%cologuard%") ~ "Fecal occult blood test finding",  # merge
+      str_like(signal_other_text, "%habit%") ~ "Other: bowel habits",
+      str_like(signal_other_text, "%constip%") ~ "Other: bowel habits",
+      str_like(signal_other_text, "%leakage%") ~ "Other: bowel habits",
+      str_like(signal_other_text, "%polyp%") ~ "Colonoscopy finding",  # merge
+      signal_type == "Other" ~ "Other: misc.",
+      .default = str_to_sentence(signal_type)
+    )
+  ) %>% 
   count(site, cancer_type, signal_type) %>% 
   arrange(desc(cancer_type), desc(site)) %>% 
   pivot_wider(names_from = site, values_from = n, values_fill = 0) %>% 
-  mutate(tot = VA + Geisinger) %>% 
-  arrange(desc(cancer_type), desc(tot), desc(VA), desc(signal_type)) %>% 
+  mutate(tot = case_when(
+    str_like(signal_type, "Other%") ~ 0,
+    .default = VA + Geisinger
+  )) %>% 
+  arrange(desc(cancer_type), desc(tot), desc(VA), signal_type) %>% 
   select(cancer_type, signal_type, VA, Geisinger) %>% 
   rename(`Cancer type` = cancer_type, `Cancer signal` = signal_type) %>% 
   kable()
 ```
 
+Someone will clearly want to know what the Geisinger "Other" signals represent.
+
+```{r geis-other}
+TEXT_CUTOFF = 100
+
+reviewed_all %>% 
+  filter(signal_type=="Other") %>% 
+  mutate(
+    dots = case_when(
+      nchar(signal_other_text) > TEXT_CUTOFF ~ "...",
+      .default = ""
+    ),
+    signal_other_text = paste(substr(signal_other_text, 1, TEXT_CUTOFF), dots)
+  ) %>% 
+  mutate(coded = case_when(
+    str_like(signal_other_text, "%pain%") ~ "Other, pain",
+    str_like(signal_other_text, "%ida%") ~ "Iron deficiency anemia",
+    str_like(signal_other_text, "%dec hb%") ~ "Other, anemia",
+    str_like(signal_other_text, "%anemia%") ~ "Other, anemia",
+    str_like(signal_other_text, "%blood%") ~ "Blood in stool",
+    str_like(signal_other_text, "%discomf%") ~ "Other, pain",
+    str_like(signal_other_text, "%loss%") ~ "Other, weight loss",
+    str_like(signal_other_text, "%diarrh%") ~ "Other, habits",
+    str_like(signal_other_text, "%cologuard%") ~ "Fecal occult blood test finding",
+    str_like(signal_other_text, "%habit%") ~ "Other, habits",
+    str_like(signal_other_text, "%constip%") ~ "Other, habits",
+    str_like(signal_other_text, "%leakage%") ~ "Other, habits",
+    str_like(signal_other_text, "%polyp%") ~ "Colonoscopy finding",
+    .default = "Other"
+  )) %>% 
+  select(cancer_type, coded, signal_other_text) %>% 
+  arrange(coded) %>% 
+  kable()
+```
 
 
 
