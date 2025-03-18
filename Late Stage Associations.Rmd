@@ -470,7 +470,9 @@ all_data %>%
 ## Proportions table (*very* detailed)
 
 ```{r DF-chart-rev-confint}
+
 # The chart review proportions that become Table 2.
+
 va_population_ci <- all_data %>%
   group_by(site, cancer_type) %>% 
   count(Sex) %>% 
@@ -480,6 +482,9 @@ va_population_ci <- all_data %>%
     Val = Sex,
     .keep = "unused"
   )
+
+# Big important data frame coming.
+# One of the last times you see actual numeric values rather than character.
 
 chart_rev_confint <- bind_rows(
   # Build up "sub-tables," one for each of 4 categorical vars of interest.
@@ -712,7 +717,6 @@ t1_df <- data.frame(
 )
 
 t1t2 <- reviewed_all %>% 
-
   # Do statistics on CONTINUOUS variables.
   group_by(site, cancer_type) %>% 
   summarise(across(c(Age, signal_to_init, init_to_completion, signal_to_completion), q123ms)) %>% 
@@ -737,7 +741,7 @@ t1t2 <- reviewed_all %>%
   # Bring in stats on DISCRETE variables.
   # IMPORTANT - this is where review_ci_concise comes in.
   bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
-  right_join(t1_df) %>%  # note, this has similar effect to filter. If row now mentioned, not included.
+  right_join(t1_df) %>%  # Note: this has similar effect to filter. If row now mentioned, not included.
   arrange(order) %>% 
   select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
 
@@ -789,9 +793,9 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 Between the two of these tables, they should have everything that's in the proportions plot.
 
 ```{r table2}
-# FIXME - maybe should include denom later. See the other FIXME, above.
-# For example table: Kesselheim et al. Prevalence and Predictors of Generic Drug Skepticism Among Physicians.
-# Maybe should change how we do the denoms too. See above. not exclude NA?
+# FIXME - Maybe should include denom later. See the other FIXME, above.
+# For example table: Kesselheim et al. "Prevalence and Predictors of Generic Drug Skepticism Among Physicians."
+# Maybe should change how we do the denoms too. See above. Not exclude NA?
 
 t1t2 %>% 
   filter(order >= 3 ) %>% 
@@ -894,7 +898,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
 
 
 
-# TABLE 3? Distribution of symptoms
+# TABLE 4? Distribution of symptoms
 
 ```{r distribution-sx}
 reviewed_all %>% 
