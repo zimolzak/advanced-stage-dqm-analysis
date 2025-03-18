@@ -230,8 +230,26 @@ reviewed_geis_colon <- colon_geis_raw %>%
     signal_date, dx_eval_init_date, dx_eval_complete_date
   )
 
+va_signal_decode <- tribble(
+~cancer_type,  ~RFInitialRF,            ~Signal,
+"Colon", 1,              "Iron Deficiency Anemia",
+"Colon", 2,              "Bowel Obstruction",
+"Colon", 3,              "Blood in Stool",
+"Colon", 4,              "Abdominal Mass",
+"Colon", 5,              "Rectal Mass",
+"Colon", 6,              "Change in Stool Caliber",
+"Colon", 7,              "Colonoscopy Finding",
+"Colon", 8,              "Fecal Occult Blood Test Finding",
+"Colon", 9,              "Flexible Sigmoidoscopy Finding",
+"Colon", 10,           "Barium Enema Finding",
+"Colon", 11,           "CT Imaging Finding",
+"Colon", 12,           "Other"
+ 
+)
+
 reviewed_va_lung_colon <- lung_va_raw %>% 
   bind_rows(colon_va_raw) %>% 
+  left_join(va_signal_decode, by = c("RFInitialRF", "cancer_type")) %>%
   mutate(
     siginit = case_when(
       siginit < -40000 ~ NA,
@@ -252,7 +270,7 @@ reviewed_va_lung_colon <- lung_va_raw %>%
     signal_date = as.Date(yr_offset),
     dx_eval_init_date = as.Date(siginit + yr_offset),
     dx_eval_complete_date = as.Date(siginit + initcomp + yr_offset),
-    signal_type = as.factor(RFInitialRF)
+    signal_type = as.factor(Signal)
   ) %>% 
   rename(screening_declined = PtDecline) %>% 
   relocate(
@@ -725,7 +743,7 @@ Between the two of these tables, they should have everything that's in the propo
 
 ```{r table2}
 # FIXME - maybe should include denom later. See the other FIXME, above.
-# See Kesselheim et al. Prevalence and Predictors of Generic Drug Skepticism Among Physicians.
+# For example table: Kesselheim et al. Prevalence and Predictors of Generic Drug Skepticism Among Physicians.
 # Maybe should change how we do the denoms too. See above. not exclude NA?
 
 t1t2 %>% 
