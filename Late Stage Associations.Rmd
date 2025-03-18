@@ -221,7 +221,7 @@ reviewed_geis_colon <- colon_geis_raw %>%
     signal_date = as.Date(`When was it recorded?`),
     dx_eval_init_date = as.Date(`When was cancer-related diagnostic evaluation initiated?`),
     dx_eval_complete_date = as.Date(`When was the evaluation completed?`),
-    signal_type = as.factor(`What was the earliest cancer signal recorded?`),
+    signal_type = `What was the earliest cancer signal recorded?`,  # not as.factor
     .keep = "unused"
   ) %>% 
   relocate(
@@ -243,7 +243,21 @@ va_signal_decode <- tribble(
 "Colon", 9,              "Flexible Sigmoidoscopy Finding",
 "Colon", 10,           "Barium Enema Finding",
 "Colon", 11,           "CT Imaging Finding",
-"Colon", 12,           "Other"
+
+"Colon", 12,           "Family Hx of Cancer in < 50 y/o",
+"Colon", 13,           "Mass on exam",
+"Colon", 14,           "Other",
+
+"Lung", 1, "Cough",
+"Lung", 2, "Dyspnea",
+"Lung", 3, "Chest pain",
+"Lung", 4, "Hemoptysis",
+"Lung", 5, "Recurrent bronchitis/pneumonia",
+"Lung", 6, "Imaging in general",
+"Lung", 7, "Paraneoplastic",
+"Lung", 8, "Hoarseness lasting > 2 wk",
+"Lung", 9, "Weight loss",
+"Lung", 10, "Other"
  
 )
 
@@ -270,7 +284,7 @@ reviewed_va_lung_colon <- lung_va_raw %>%
     signal_date = as.Date(yr_offset),
     dx_eval_init_date = as.Date(siginit + yr_offset),
     dx_eval_complete_date = as.Date(siginit + initcomp + yr_offset),
-    signal_type = as.factor(Signal)
+    signal_type = Signal  # not as.factor
   ) %>% 
   rename(screening_declined = PtDecline) %>% 
   relocate(
@@ -304,6 +318,35 @@ reviewed_all <- bind_rows(
     signal_to_completion = as.numeric(dx_eval_complete_date - signal_date)
   )
 ```
+
+Just confirming that this source variable only goes up to 12. Not 14 like in the Word doc:
+
+```{r confirm-crc}
+reviewed_va_lung_colon %>% 
+  filter(cancer_type == "Colon") %>%
+  count(RFInitialRF, signal_type) %>% 
+  kable()
+```
+
+
+Just confirming for lung. This seems to go up to 8.
+
+```{r confirm-lung}
+reviewed_va_lung_colon %>% 
+  filter(cancer_type == "Lung") %>%
+  count(RFInitialRF, signal_type) %>% 
+  kable()
+```
+
+Geisinger lung:
+
+```{r cf-geisinger}
+reviewed_geis_lung %>% 
+  mutate(signal_type = substr(signal_type, 1, 40)) %>% 
+  count(signal_type) %>% 
+  kable()
+```
+
 
 ```{r remove-chart-rev-bits}
 rm(lung_va_raw, colon_va_raw, lung_geis_raw, colon_geis_raw)
@@ -848,17 +891,26 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
 
 ```{r distribution-sx}
 reviewed_all %>% 
-  mutate(signal_type = case_when(
-    signal_type == "imaging in general (should already be covered in dropdown list)" ~ "Imaging",
+  filter(signal_present == "Yes") %>% 
+  mutate(signal_type = case_when(  # compare to lines 233 decode
+    signal_type == "imaging in general (should already be covered in dropdown list)" ~ "Imaging in general",
     signal_type == "Cough (Worsening persistent cough/bronchitis or new description of chronic cough lasting > 8 weeks.)" ~ "Cough",
     signal_type == "weight loss (Provider-acknowledged unexplained weight loss or other unexplained weight loss > 10 lbs in addition to respiratory symptoms)" ~ "Weight loss",
     signal_type == "recurrent bronchitis/pneumonia (an index infection, followed by 2nd pneumonia at least 1 month after index, no more than 1 year after index.)" ~ "Recurrent bronchitis/pneumonia",
-    .default = signal_type
+    signal_type == "CT Imaging Finding" ~ "CT Imaging Finding",  # save this from sentence case
+    is.na(signal_type) ~ "Other",  # Fold the rare NA values into Other.
+    .default = str_to_sentence(signal_type)
   )) %>% 
   count(site, cancer_type, signal_type) %>% 
-  arrange(desc(site), desc(cancer_type), desc(n)) %>% 
+  arrange(desc(cancer_type), desc(site)) %>% 
+  pivot_wider(names_from = site, values_from = n, values_fill = 0) %>% 
+  mutate(tot = VA + Geisinger) %>% 
+  arrange(desc(cancer_type), desc(tot), desc(VA), desc(signal_type)) %>% 
+  select(cancer_type, signal_type, VA, Geisinger) %>% 
+  rename(`Cancer type` = cancer_type, `Cancer signal` = signal_type) %>% 
   kable()
 ```
+
 
 
 
