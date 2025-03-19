@@ -352,7 +352,7 @@ reviewed_geis_lung %>%
   kable()
 ```
 
-```{r remove-chart-rev-bits}
+```{r DELETE-chart-rev-bits, eval=FALSE, include=FALSE}
 rm(lung_va_raw, colon_va_raw, lung_geis_raw, colon_geis_raw)
 rm(coltype_spec, geis_columns)
 rm(reviewed_geis_colon, reviewed_geis_lung)   #, reviewed_va_lung_colon)
@@ -469,7 +469,7 @@ all_data %>%
 
 ## Proportions table (*very* detailed)
 
-```{r DF-chart-rev-confint}
+```{r DF-chart-rev-confint-IMPORTANT}
 
 # The chart review proportions that become Table 2.
 
@@ -594,6 +594,21 @@ review_ci_concise <- chart_rev_confint %>%
   )) %>% 
   filter(Characteristic != "Race NA")
 ```
+
+To do: LEFT OFF HERE Mar 19
+
+- Cancer signal present
+    - test ordered timely
+    - test ordered delay: `DxDelayRFFUReq`
+    - test not ordered
+    - completion: `DxDelayRFFUComp`
+- no signal but need screening
+    - got screening
+    - Missed screening
+    - Declined screening
+- MOD present
+
+
 
 ### Aside
 
