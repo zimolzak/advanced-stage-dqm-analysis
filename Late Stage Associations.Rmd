@@ -201,7 +201,9 @@ reviewed_geis_colon <- colon_geis_raw %>%
     Age = `Age:`,
     modtext = `Is there a missed opportunity (in general) in this case?`,
     screening_declined = `Did the patient decline screening colonoscopies in the past?`,
-    screening_performed = `Was a colonoscopy screening performed prior to index visit?`
+    screening_performed = `Was a colonoscopy screening performed prior to index visit?`,
+    MOD_delay_requesting = `Was there a delay (>7 days) in requesting follow-up for any of the cancer signals that the patient presented with?`,
+    MOD_delay_completing = `Was there a delay (>60 days) in completing requested follow-up for the cancer signal?`
   ) %>% 
   mutate(
     Sex = as.factor(`Gender:`),
@@ -289,7 +291,11 @@ reviewed_va_lung_colon <- lung_va_raw %>%
     dx_eval_complete_date = as.Date(siginit + initcomp + yr_offset),
     signal_type = Signal  # not as.factor
   ) %>% 
-  rename(screening_declined = PtDecline) %>% 
+  rename(
+    screening_declined = PtDecline,
+    MOD_delay_requesting = DxDelayRFFUReq,
+    MOD_delay_completing = DxDelayRFFUComp
+  ) %>% 
   relocate(
     site, cancer_type,  # Age, Sex, Race, Location,
     signal_present, cancer_dx_considered, MOD_definite,
@@ -308,7 +314,8 @@ reviewed_all <- bind_rows(
     signal_date, dx_eval_init_date, dx_eval_complete_date,
     Reviewer,
     screening_performed, screening_declined, screening_offered,
-    signal_type, signal_other_text
+    signal_type, signal_other_text,
+    MOD_delay_requesting, MOD_delay_completing
   ) %>% 
   mutate(
     across(c(site, cancer_type), as.factor),
