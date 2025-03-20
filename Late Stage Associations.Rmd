@@ -322,10 +322,24 @@ reviewed_all <- bind_rows(
     Sex = fct_collapse(Sex, M = "MALE", F = "FEMALE"),
     
     # NOTE the different naming "signal" vs "sig", and "completion" vs "complete"
-    
     signal_to_init = as.numeric(dx_eval_init_date - signal_date),
     init_to_completion = as.numeric(dx_eval_complete_date - dx_eval_init_date),
-    signal_to_completion = as.numeric(dx_eval_complete_date - signal_date)
+    signal_to_completion = as.numeric(dx_eval_complete_date - signal_date),
+    
+    MOD_delay_pattern = as.factor(case_when(
+      MOD_delay_completing=="Yes" & MOD_delay_requesting=="Yes" ~ "Both",
+      MOD_delay_requesting=="Yes" ~ "Requesting",
+      MOD_delay_completing=="Yes" ~ "Completing",
+      # All combos Yes-any, any-Yes, Yes-Yes are now covered.
+      
+      signal_present=="Yes" & (!MOD_definite) ~ "Timely",
+      MOD_definite & signal_present=="Yes" ~ "Unspecified delay",
+      # All signal=Yes are now covered.
+      
+      (signal_present=="No" | signal_present=="Unsure") & MOD_definite ~ "Missed screening",
+      (signal_present=="No" | signal_present=="Unsure")  & (!MOD_definite) & screening_declined=="Yes" ~ "Declined screening",
+      (signal_present=="No" | signal_present=="Unsure")  & (!MOD_definite) ~ "Screen-compliant"
+    ))
   )
 ```
 
