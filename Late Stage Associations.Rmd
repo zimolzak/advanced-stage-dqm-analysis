@@ -558,6 +558,17 @@ chart_rev_confint <- bind_rows(
     )) %>% 
     count(cancer_dx_considered) %>%
     mutate(Fact = "Ca considered", Val=as.character(cancer_dx_considered)),
+  
+  reviewed_all_grp %>% 
+    filter(signal_present == "Yes") %>% 
+    count(MOD_delay_pattern) %>%
+    mutate(Fact = "    +S Pattern", Val=as.character(MOD_delay_pattern)),
+  
+  reviewed_all_grp %>% 
+    filter(signal_present == "No") %>% 
+    count(MOD_delay_pattern) %>%
+    mutate(Fact = "    -S Pattern", Val=as.character(MOD_delay_pattern)),
+  
   reviewed_all_grp %>% 
     count(screening_declined) %>%
     # Note: no filter(!is.na())
