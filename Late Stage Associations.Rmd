@@ -503,8 +503,17 @@ reviewed_all_grp <- reviewed_all %>%
     cancer_dx_considered = case_when(
       cancer_dx_considered == "Unsure" ~ "Yes",  # benefit of the doubt
       .default = cancer_dx_considered
-    )
-  )
+    ),
+    MOD_delay_requesting = case_when(
+      MOD_delay_requesting == "Unsure" ~ "No",
+      .default = MOD_delay_requesting
+    ),
+    MOD_delay_completing = case_when(
+      MOD_delay_completing == "Unsure" ~ "No",
+      .default = MOD_delay_completing
+    ),
+  ) %>% 
+  replace_na(list(MOD_delay_requesting = "No", MOD_delay_completing = "No"))
 
 chart_rev_confint <- bind_rows(
   # Build up "sub-tables," one for each of 4 categorical vars of interest.
