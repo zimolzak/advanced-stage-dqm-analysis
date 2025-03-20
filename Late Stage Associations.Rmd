@@ -493,6 +493,19 @@ va_population_ci <- all_data %>%
 # Big important data frame coming.
 # One of the last times you see actual numeric values rather than character.
 
+reviewed_all_grp <- reviewed_all %>%
+  group_by(site, cancer_type) %>% 
+  mutate(
+    signal_present = case_when(
+      signal_present == "Unsure" ~ "No",  # benefit of the doubt
+      .default = signal_present
+    ),
+    cancer_dx_considered = case_when(
+      cancer_dx_considered == "Unsure" ~ "Yes",  # benefit of the doubt
+      .default = cancer_dx_considered
+    )
+  )
+
 chart_rev_confint <- bind_rows(
   # Build up "sub-tables," one for each of 4 categorical vars of interest.
   # (MOD, sex, signal, considered)
@@ -502,78 +515,71 @@ chart_rev_confint <- bind_rows(
   
   # FIXME - change how we throw out NAs?
   
-  reviewed_all %>% 
-    group_by(site, cancer_type) %>% 
+  reviewed_all_grp %>% 
     count(MOD_definite) %>% 
     filter(!is.na(MOD_definite)) %>%
-    mutate(d = sum(n), Fact = "MOD", Val=as.character(MOD_definite)) %>% 
-    select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% 
-    group_by(site, cancer_type) %>% 
+    mutate(Fact = "MOD", Val=as.character(MOD_definite)),
+  reviewed_all_grp %>% 
     count(Sex) %>% 
     filter(!is.na(Sex)) %>%
-    mutate(d = sum(n), Fact = "Sex", Val=as.character(Sex)) %>% 
-    select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% 
-    group_by(site, cancer_type) %>% 
+    mutate(Fact = "Sex", Val=as.character(Sex)),
+  reviewed_all_grp %>% 
     count(signal_present) %>% 
     filter(!is.na(signal_present)) %>%
-    mutate(d = sum(n), Fact = "Ca signal", Val=as.character(signal_present)) %>% 
-    select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% 
-    group_by(site, cancer_type) %>% 
-    filter(!is.na(cancer_dx_considered)) %>% 
+    mutate(Fact = "Ca signal", Val=as.character(signal_present)),
+  reviewed_all_grp %>% 
+    filter(signal_present == "Yes") %>% 
+    mutate(cancer_dx_considered = case_when(
+      is.na(cancer_dx_considered) ~ "Yes",  # benefit of the doubt
+      .default = cancer_dx_considered
+    )) %>% 
     count(cancer_dx_considered) %>%
-    mutate(d = sum(n), Fact = "Ca considered", Val=as.character(cancer_dx_considered)) %>%  
-    select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% 
-    group_by(site, cancer_type) %>% 
+    mutate(Fact = "Ca considered", Val=as.character(cancer_dx_considered)),
+  reviewed_all_grp %>% 
     count(screening_declined) %>%
     # Note: no filter(!is.na())
-    mutate(d = sum(n), Fact = "Ever declined screening", Val=as.character(screening_declined)) %>%  
-    select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% 
-    group_by(site, cancer_type) %>% 
+    mutate(Fact = "Ever declined screening", Val=as.character(screening_declined)),
+  reviewed_all_grp %>% 
     count(Race) %>%
     # Note: no filter(!is.na())
-    mutate(d = sum(n), Fact = "Race", Val=as.character(Race)) %>%  
-    select(site, cancer_type, Fact, Val, n, d),
-  reviewed_all %>% 
-    group_by(site, cancer_type) %>% 
+    mutate(Fact = "Race", Val=as.character(Race)),
+  reviewed_all_grp %>% 
     filter(MOD_definite) %>% # There is a filter but it's different. Not to do with is.na(MOD)
     count(signal_present) %>% 
-    mutate(d = sum(n), Fact = "Cancer signal present, given MOD", Val=signal_present) %>% 
-    select(site, cancer_type, Fact, Val, n, d),
+    mutate(Fact = "Cancer signal present, given MOD", Val=signal_present),
   va_population_ci
 ) %>%  # End of very big bind_rows().
+  group_by(site, cancer_type, Fact) %>% 
+  select(site, cancer_type, Fact, Val, n, d) %>% 
   mutate(
+    d = sum(n),
     Percentage = percentage_text(n, d),
     P_CI_short = pct_ci_text(n, d),
     wilson.poi = binconf(n, d)[,"PointEst"],
     wilson.low = binconf(n, d)[,"Lower"],
     wilson.upp = binconf(n, d)[,"Upper"]
   ) %>% 
-  filter(
-    # Exclude a few rows because it is redundant to say 25% true, 75% false. Just
-    # mention one of these %s.
-    (Fact == "MOD" & Val == TRUE) |
-      (Fact == "Sex" & Val == "M") |
-      (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
-      (Fact == "Ca considered" & Val == "No") |  # Assume Unsure = considered.
-      (Fact == "Ever declined screening" & Val == "Yes") |
-      Fact == "Race" |
-      (Fact == "Cancer signal present, given MOD" & Val == "No")
-  ) %>% 
+  # filter(
+  #   # Exclude a few rows because it is redundant to say 25% true, 75% false. Just
+  #   # mention one of these %s.
+  #   (Fact == "MOD" & Val == TRUE) |
+  #     (Fact == "Sex" & Val == "M") |
+  #     (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
+  #     (Fact == "Ca considered" & Val == "No") |  # Assume Unsure = considered.
+  #     (Fact == "Ever declined screening" & Val == "Yes") |
+  #     Fact == "Race" |
+  #     (Fact == "Cancer signal present, given MOD" & Val == "No")
+  # ) %>% 
   unite(col=Characteristic, Fact, Val, sep=" ") %>%
-  mutate(Characteristic = case_when(  # Rename some cell contents for better readability.
-    Characteristic == "Ca considered No" ~ "Cancer not considered",
-    Characteristic == "Ca signal Yes" ~ "Cancer signal present",
-    Characteristic == "Ever declined screening Yes" ~ 'Declined screening',
-    Characteristic == "MOD TRUE" ~ 'MOD present',
-    Characteristic == "Sex M" ~ 'Male',
-    Characteristic == "Cancer signal present, given MOD No" ~ 'Missed screening, given MOD',
-    .default = Characteristic
-  )) %>% 
+  # mutate(Characteristic = case_when(  # Rename some cell contents for better readability.
+  #   Characteristic == "Ca considered No" ~ "Cancer not considered",
+  #   Characteristic == "Ca signal Yes" ~ "Cancer signal present",
+  #   Characteristic == "Ever declined screening Yes" ~ 'Declined screening',
+  #   Characteristic == "MOD TRUE" ~ 'MOD present',
+  #   Characteristic == "Sex M" ~ 'Male',
+  #   Characteristic == "Cancer signal present, given MOD No" ~ 'Missed screening, given MOD',
+  #   .default = Characteristic
+  # )) %>% 
   arrange(desc(site), desc(cancer_type), Characteristic)
 
 # Print the detailed CI table now.
@@ -777,7 +783,7 @@ t1t2 <- reviewed_all %>%
   # Bring in stats on DISCRETE variables.
   # IMPORTANT - this is where review_ci_concise comes in.
   bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
-  right_join(t1_df) %>%  # Note: this has similar effect to filter. If row now mentioned, not included.
+  right_join(t1_df) %>%  # Note: this has similar effect to filter. If row not mentioned, not included.
   arrange(order) %>% 
   select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
 
