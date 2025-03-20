@@ -720,10 +720,10 @@ t1t2_ordering <- tribble(
   "n","n",
   "Age", "Age, y",
   "Sex M","Male",
-  "White","    White",
-  "Black","    Black",
-  "Hispanic","    Hispanic",
-  "Other","    Other",
+  "White","White",
+  "Black","Black",
+  "Hispanic","Hispanic",
+  "Other","Other",
   "Advanced stage","Advanced stage",
   
   "Ca signal Yes","Cancer signal present",
@@ -776,7 +776,7 @@ t1t2 <- reviewed_all %>%
   select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
 
 # Just print the Table 1 as a kable().
-table_1_for_later %>% 
+table_1_for_later %>%   # mainly VA stuff
   mutate(Characteristic = case_when(
     Characteristic == "M" ~ "Male",
     Characteristic == "Age" ~ "Age, y",
@@ -784,7 +784,7 @@ table_1_for_later %>%
   )) %>% 
   left_join(
     t1t2 %>% 
-    filter(order < 3, Characteristic != "Advanced stage") %>% 
+    filter(order < 9, Characteristic != "Advanced stage") %>% 
     select(order, Characteristic, `Geisinger Lung`, `Geisinger Colon`) %>%   # age, male
     rename(gl = `Geisinger Lung`, gc = `Geisinger Colon`)
   ) %>% 
