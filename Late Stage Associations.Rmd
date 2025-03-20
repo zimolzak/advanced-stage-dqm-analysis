@@ -727,16 +727,16 @@ t1t2_ordering <- tribble(
   "Advanced stage","Advanced stage",
   
   "Ca signal Yes","Cancer signal present",
-  "    +S Pattern Requesting", "    req",
-  "    +S Pattern Completing", "    comp",
-  "    +S Pattern Both", "    both",
-  "    +S Pattern Unspecified delay", "    unsp",
-  "    +S Pattern Timely", "    good",
+  "    +S Pattern Requesting", "    Delay initiating workup",
+  "    +S Pattern Completing", "    Delay completing workup",
+  "    +S Pattern Both", "    Delay initiating and completing workup",
+  "    +S Pattern Unspecified delay", "    Delay, unspecified",
+  "    +S Pattern Timely", "    No delays",
   
   "Ca signal No","Cancer signal absent",
-  "    -S Pattern Missed screening", "    ms",
-  "    -S Pattern Screen-compliant", "    good",
-  "    -S Pattern Declined screening", "    dec",
+  "    -S Pattern Missed screening", "    Screening due but not performed",
+  "    -S Pattern Screen-compliant", "    Up-to-date on screening per guidelines",
+  "    -S Pattern Declined screening", "    Screening declined",
   
   "MOD TRUE","MOD present",
   "signal_to_init", "Cancer signal to workup initiation, d",
@@ -829,6 +829,7 @@ Between the two of these tables, they should have everything that's in the propo
 t1t2 %>% 
   filter(order >= 9 ) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
+  replace_na(list(`VA Lung` = "0", `VA Colon` = "0", `Geisinger Lung` = "0" )) %>% 
   kable()
 ```
 
