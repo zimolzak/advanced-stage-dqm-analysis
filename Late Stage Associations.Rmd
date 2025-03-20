@@ -327,9 +327,9 @@ reviewed_all <- bind_rows(
     signal_to_completion = as.numeric(dx_eval_complete_date - signal_date),
     
     MOD_delay_pattern = as.factor(case_when(
-      MOD_delay_completing=="Yes" & MOD_delay_requesting=="Yes" ~ "Both",
-      MOD_delay_requesting=="Yes" ~ "Requesting",
-      MOD_delay_completing=="Yes" ~ "Completing",
+      signal_present=="Yes" & MOD_delay_completing=="Yes" & MOD_delay_requesting=="Yes" ~ "Both",
+      signal_present=="Yes" & MOD_delay_requesting=="Yes" ~ "Requesting",
+      signal_present=="Yes" & MOD_delay_completing=="Yes" ~ "Completing",
       # All combos Yes-any, any-Yes, Yes-Yes are now covered.
       
       signal_present=="Yes" & (!MOD_definite) ~ "Timely",
@@ -536,53 +536,35 @@ chart_rev_confint <- bind_rows(
   # site, cancer_type, Fact, Val, n, d
   # VA,   Colon,       Sex,  F,   55, 100.
   
-  # FIXME - change how we throw out NAs?
-  
-  reviewed_all_grp %>% 
-    count(MOD_definite) %>% 
-    filter(!is.na(MOD_definite)) %>%
-    mutate(Fact = "MOD", Val=as.character(MOD_definite)),
   reviewed_all_grp %>% 
     count(Sex) %>% 
     filter(!is.na(Sex)) %>%
     mutate(Fact = "Sex", Val=as.character(Sex)),
+  reviewed_all_grp %>% 
+    count(Race) %>%
+    # Note: no filter(!is.na())
+    mutate(Fact = "Race", Val=as.character(Race)),
+
   reviewed_all_grp %>% 
     count(signal_present) %>% 
     filter(!is.na(signal_present)) %>%
     mutate(Fact = "Ca signal", Val=as.character(signal_present)),
   reviewed_all_grp %>% 
     filter(signal_present == "Yes") %>% 
-    mutate(cancer_dx_considered = case_when(
-      is.na(cancer_dx_considered) ~ "Yes",  # benefit of the doubt
-      .default = cancer_dx_considered
-    )) %>% 
-    count(cancer_dx_considered) %>%
-    mutate(Fact = "Ca considered", Val=as.character(cancer_dx_considered)),
-  
-  reviewed_all_grp %>% 
-    filter(signal_present == "Yes") %>% 
     count(MOD_delay_pattern) %>%
     mutate(Fact = "    +S Pattern", Val=as.character(MOD_delay_pattern)),
-  
   reviewed_all_grp %>% 
     filter(signal_present == "No") %>% 
     count(MOD_delay_pattern) %>%
     mutate(Fact = "    -S Pattern", Val=as.character(MOD_delay_pattern)),
   
   reviewed_all_grp %>% 
-    count(screening_declined) %>%
-    # Note: no filter(!is.na())
-    mutate(Fact = "Ever declined screening", Val=as.character(screening_declined)),
-  reviewed_all_grp %>% 
-    count(Race) %>%
-    # Note: no filter(!is.na())
-    mutate(Fact = "Race", Val=as.character(Race)),
-  reviewed_all_grp %>% 
-    filter(MOD_definite) %>% # There is a filter but it's different. Not to do with is.na(MOD)
-    count(signal_present) %>% 
-    mutate(Fact = "Cancer signal present, given MOD", Val=signal_present),
+    count(MOD_definite) %>% 
+    filter(!is.na(MOD_definite)) %>%
+    mutate(Fact = "MOD", Val=as.character(MOD_definite)),
   va_population_ci
 ) %>%  # End of very big bind_rows().
+  
   group_by(site, cancer_type, Fact) %>% 
   select(site, cancer_type, Fact, Val, n, d) %>% 
   mutate(
@@ -593,17 +575,10 @@ chart_rev_confint <- bind_rows(
     wilson.low = binconf(n, d)[,"Lower"],
     wilson.upp = binconf(n, d)[,"Upper"]
   ) %>% 
-  # filter(
-  #   # Exclude a few rows because it is redundant to say 25% true, 75% false. Just
-  #   # mention one of these %s.
-  #   (Fact == "MOD" & Val == TRUE) |
-  #     (Fact == "Sex" & Val == "M") |
-  #     (Fact == "Ca signal" & Val == "Yes") |  # Assume NA = no signal.
-  #     (Fact == "Ca considered" & Val == "No") |  # Assume Unsure = considered.
-  #     (Fact == "Ever declined screening" & Val == "Yes") |
-  #     Fact == "Race" |
-  #     (Fact == "Cancer signal present, given MOD" & Val == "No")
-  # ) %>% 
+  filter(
+    # Exclude 1 rows because it is redundant to say 25% true, 75% false.
+    !(Fact == "MOD" & Val == FALSE)
+  ) %>%
   unite(col=Characteristic, Fact, Val, sep=" ") %>%
   # mutate(Characteristic = case_when(  # Rename some cell contents for better readability.
   #   Characteristic == "Ca considered No" ~ "Cancer not considered",
@@ -614,7 +589,7 @@ chart_rev_confint <- bind_rows(
   #   Characteristic == "Cancer signal present, given MOD No" ~ 'Missed screening, given MOD',
   #   .default = Characteristic
   # )) %>% 
-  arrange(desc(site), desc(cancer_type), Characteristic)
+  arrange(desc(site), desc(cancer_type))
 
 # Print the detailed CI table now.
 chart_rev_confint %>%
@@ -641,18 +616,6 @@ review_ci_concise <- chart_rev_confint %>%
   filter(Characteristic != "Race NA")
 ```
 
-To do: LEFT OFF HERE Mar 19
-
-- Cancer signal present
-    - test ordered timely
-    - test ordered delay: `DxDelayRFFUReq`
-    - test not ordered
-    - completion: `DxDelayRFFUComp`
-- no signal but need screening
-    - got screening
-    - Missed screening
-    - Declined screening
-- MOD present
 
 
 
@@ -696,16 +659,16 @@ That is also most consistent across VA vs.\ Geisinger data.
 theme_set(theme_bw())
 
 chart_rev_confint %>% 
-  filter(!grepl("Race", Characteristic)) %>%   # FIXME - can bring back later
+  filter(!grepl("Race", Characteristic), !grepl("+S", Characteristic, fixed = TRUE), !grepl("-S", Characteristic)) %>%   # FIXME - can bring back later
   rename(Site = site) %>% 
   ggplot(aes(x = Characteristic, y = wilson.poi, colour = Site, group = Site)) +
   facet_grid(cols=vars(cancer_type)) +
   geom_errorbar(aes(ymin = wilson.low, ymax = wilson.upp), position = "dodge", width=0.3, color="#222222", linewidth = 0.3) +
   geom_point(position= position_dodge(width = 0.3)) +
-  scale_x_discrete(
-    guide = guide_axis(n.dodge = 1),
-    labels = c("Ca. not\nconsid.", 'Cancer\nsignal', 'Declined\nscreen', 'Male', 'Screening\nMOD', 'MOD')
-  ) +
+  # scale_x_discrete(
+  #   guide = guide_axis(n.dodge = 1),
+  #   labels = c("Ca. not\nconsid.", 'Cancer\nsignal', 'Declined\nscreen', 'Male', 'Screening\nMOD', 'MOD')  # FIXME - fragile
+  # ) +
   ylim(0,1) +
   labs(x = "Patient Characteristic", y = "Proportion of Patients") +
   theme(
@@ -752,45 +715,36 @@ mean_text <- Vectorize(mean_text_scalar)
 ```
 
 ```{r DF-t1t2, message=FALSE}
-t1_df <- data.frame(
-  Characteristic_short = c(
-    "Age",
-    "signal_to_init",
-    "signal_to_completion",
-    "init_to_completion",
-    "Cancer not considered",
-    "Cancer signal present",
-    "Declined screening",
-    "MOD present",
-    "Male",
-    "Advanced stage",
-    "White",
-    "Black",
-    "Hispanic",
-    "Other",
-    "n",
-    "Missed screening, given MOD"
-  ),
-  order = c(1, 7, 9, 8, 5, 3, 6, 4, 2, 2.5, 2.1, 2.15, 2.2, 2.3, 0, 5.9),
-  Characteristic = c(
-    "Age, y",
-    "Cancer signal to workup initiation, d",
-    "Cancer signal to workup completion, d",
-    "Workup initiation to completion, d",
-    "Cancer not considered",
-    "Cancer signal present",
-    "Declined screening",
-    "MOD present",
-    "Male",
-    "Advanced stage",
-    "White",
-    "Black",
-    "Hispanic",
-    "Other",
-    "n",
-    "Missed screening, given MOD"
-  )
-)
+t1t2_ordering <- tribble(
+  ~Characteristic_short, ~Characteristic,
+  "n","n",
+  "Age", "Age, y",
+  "Sex M","Male",
+  "White","    White",
+  "Black","    Black",
+  "Hispanic","    Hispanic",
+  "Other","    Other",
+  "Advanced stage","Advanced stage",
+  
+  "Ca signal Yes","Cancer signal present",
+  "    +S Pattern Requesting", "    req",
+  "    +S Pattern Completing", "    comp",
+  "    +S Pattern Both", "    both",
+  "    +S Pattern Unspecified delay", "    unsp",
+  "    +S Pattern Timely", "    good",
+  
+  "Ca signal No","Cancer signal absent",
+  "    -S Pattern Missed screening", "    ms",
+  "    -S Pattern Screen-compliant", "    good",
+  "    -S Pattern Declined screening", "    dec",
+  
+  "MOD TRUE","MOD present",
+  "signal_to_init", "Cancer signal to workup initiation, d",
+  "init_to_completion", "Workup initiation to completion, d",
+  "signal_to_completion", "Cancer signal to workup completion, d",
+) %>% 
+  mutate(k = 1, order = row_number(k)) %>% 
+  select(order, Characteristic_short, Characteristic)
 
 t1t2 <- reviewed_all %>% 
   # Do statistics on CONTINUOUS variables.
@@ -817,7 +771,7 @@ t1t2 <- reviewed_all %>%
   # Bring in stats on DISCRETE variables.
   # IMPORTANT - this is where review_ci_concise comes in.
   bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
-  right_join(t1_df) %>%  # Note: this has similar effect to filter. If row not mentioned, not included.
+  right_join(t1t2_ordering) %>%  # Note: this has similar effect to filter. If row not mentioned, not included.
   arrange(order) %>% 
   select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
 
@@ -869,16 +823,11 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 Between the two of these tables, they should have everything that's in the proportions plot.
 
 ```{r table2}
-# FIXME - Maybe should include denom later. See the other FIXME, above.
-# For example table: Kesselheim et al. "Prevalence and Predictors of Generic Drug Skepticism Among Physicians."
-# Maybe should change how we do the denoms too. See above. Not exclude NA?
+# FIXME - Maybe should print out the numer & denom eventually, for clarity. See the other FIXME, above.
+# For an example table: Kesselheim et al. "Prevalence and Predictors of Generic Drug Skepticism Among Physicians."
 
 t1t2 %>% 
-  filter(order >= 3 ) %>% 
-  mutate(Characteristic = case_when(
-    Characteristic == "Cancer not considered" ~ "Cancer not considered, given signal",
-    .default = Characteristic
-  )) %>% 
+  filter(order >= 9 ) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
   kable()
 ```
