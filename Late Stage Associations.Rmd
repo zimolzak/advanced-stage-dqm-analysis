@@ -147,6 +147,8 @@ ex_colon <- exclusions %>% filter(cancer_type=="Colon") %>% pull(n)
 ex_lung  <- exclusions %>% filter(cancer_type=="Lung")  %>% pull(n)
 ```
 
+## For text: INCLUDE
+
 **For text:** On the basis of PCP visits in VA, we excluded `r ex_lung` patients
 from the lung cancer analysis, and `r ex_colon` patients from the colorectal analysis.
 
@@ -833,6 +835,15 @@ t1t2 %>%
   kable()
 ```
 
+Remember, after knit:
+
+- [ ] Indent the appropriate rows.
+
+
+
+
+# A few plots, mostly turned off
+
 ## Age descriptive boxplot
 
 - *Turned off.*
@@ -1061,7 +1072,7 @@ temp_mod_sv %>%
 ```
 
 
-## About off-scale points
+## For text: About off-scale points (INCLUDE)
 
 ```{r some-off-scale-counts, message=FALSE}
 temp_mod_sv %>% 
@@ -1127,6 +1138,99 @@ reviewed_all %>%
   pivot_wider(id_cols = signal_to_completion_months, names_from = c(site, cancer_type), values_from = Percent) %>% 
   kable()
 ```
+
+
+
+
+# Sensitivity analysis
+
+```{r sensitivity-boxplot}
+reviewed_all %>% 
+  filter(MOD_delay_requesting != "Unsure", MOD_delay_completing != "Unsure") %>% 
+  ggplot(aes(x=signal_to_init, paste(site, cancer_type, MOD_delay_requesting), color=MOD_delay_requesting )) +
+  geom_boxplot() +
+  coord_cartesian(xlim = c(0,180))
+
+
+# site, cancer_type, MOD_definite, MOD_delay_requesting, MOD_delay_completing
+```
+
+```{r sensitivity-table}
+CTIMES <- c(60, 90)
+LTIMES <- c(30, 60)
+ITIMES <- c(7, 14)
+
+sens_table <- reviewed_all %>% 
+  select(site, cancer_type, MOD_definite, signal_to_init, signal_to_init, init_to_completion) %>% 
+  filter(MOD_definite) %>% 
+  mutate(
+    # 60 colon 30 lung.
+    init7 = (signal_to_init > ITIMES[1]),
+    init14 = (signal_to_init > ITIMES[2]),
+    comp3060 = case_when(
+      cancer_type == "Colon" ~ (init_to_completion > CTIMES[1]),
+      cancer_type == "Lung" ~ (init_to_completion > LTIMES[1]),
+    ),
+    comp6090 = case_when(
+      cancer_type == "Colon" ~ (init_to_completion > CTIMES[2]),
+      cancer_type == "Lung" ~ (init_to_completion > LTIMES[2]),
+    ),
+    type = case_when(
+      init7 != init14 ~ '7-14',
+      comp6090 != comp3060 & cancer_type == "Colon" ~ 'col60-90',
+      comp6090 != comp3060 & cancer_type == "Lung" ~ 'lun30-60',
+    ),
+    reclassified = (init7 != init14) | (comp6090 != comp3060)
+  ) %>% 
+  count(
+    MOD_definite,
+     type, reclassified, cancer_type
+  ) %>% 
+  arrange(cancer_type) %>% 
+  group_by(cancer_type) %>% 
+  mutate(
+    tot_ca = sum(n),
+    pct_ca = round(n / tot_ca * 100, 1)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    tot = sum(n),
+    # pct = round(n / tot * 100, 1)
+  ) %>% 
+  filter(reclassified) %>% 
+  group_by(type) %>% 
+  mutate(
+    n_grp = sum(n),
+    pct_grp = round(n_grp / tot * 100, 1)
+  ) %>% 
+  arrange(type) %>% 
+  select(!MOD_definite & !reclassified)
+
+sens_table %>% 
+  kable()
+
+## prep vars for printing
+
+type_a_list <- sens_table %>% 
+  filter(type=="7-14") %>% 
+  pull(pct_grp)
+
+init_diff <- type_a_list[1]
+
+col_diff <- sens_table %>% 
+  filter(type=="col60-90") %>% 
+  pull(pct_ca)
+
+lung_diff <- sens_table %>% 
+  filter(type=="lun30-60") %>% 
+  pull(pct_ca)
+```
+
+## For text (INCLUDE)
+
+In sensitivity analysis, `r init_diff` percent of all missed opportunities would be excluded if the time to initiate workup was changed from `r ITIMES[1]` to `r ITIMES[2]` days.
+If time to complete colorectal cancer workup was changed from `r CTIMES[1]` to `r CTIMES[2]` days, `r col_diff` percent of colorectal missed opportunities would be excluded.
+If time to complete lung cancer workup was changed from `r LTIMES[1]` to `r LTIMES[2]` days, `r lung_diff` percent of lung missed opportunities would be excluded.
 
 
 
