@@ -329,13 +329,13 @@ reviewed_all <- bind_rows(
     signal_to_completion = as.numeric(dx_eval_complete_date - signal_date),
     
     MOD_delay_pattern = as.factor(case_when(
-      signal_present=="Yes" & MOD_delay_completing=="Yes" & MOD_delay_requesting=="Yes" ~ "Both",
+      signal_present=="Yes" & MOD_delay_completing=="Yes" & MOD_delay_requesting=="Yes" ~ "Combined",
       signal_present=="Yes" & MOD_delay_requesting=="Yes" ~ "Requesting",
       signal_present=="Yes" & MOD_delay_completing=="Yes" ~ "Completing",
       # All combos Yes-any, any-Yes, Yes-Yes are now covered.
       
       signal_present=="Yes" & (!MOD_definite) ~ "Timely",
-      MOD_definite & signal_present=="Yes" ~ "Unspecified delay",
+      MOD_definite & signal_present=="Yes" ~ "Combined",  # IMPORTANT: This now adds 2 patterns together
       # All signal=Yes are now covered.
       
       (signal_present=="No" | signal_present=="Unsure") & MOD_definite ~ "Missed screening",
@@ -731,8 +731,8 @@ t1t2_ordering <- tribble(
   "Ca signal Yes","Cancer signal present",
   "    +S Pattern Requesting", "    Delay initiating workup",
   "    +S Pattern Completing", "    Delay completing workup",
-  "    +S Pattern Both", "    Delay initiating and completing workup",
-  "    +S Pattern Unspecified delay", "    Delay, unspecified",
+  "    +S Pattern Combined", "    Delay, combined",
+  # "    +S Pattern Unspecified delay", "    Delay, unspecified",  # should not exist any more
   "    +S Pattern Timely", "    No delays",
   
   "Ca signal No","Cancer signal absent",
@@ -944,7 +944,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
 # TABLE 4: Distribution of symptoms
 
 ```{r distribution-sx}
-reviewed_all %>% 
+distribution_of_symptoms <- reviewed_all %>% 
   filter(signal_present == "Yes") %>% 
   mutate(
     signal_type = case_when(  # Compare to lines 233, "decode".
@@ -953,21 +953,20 @@ reviewed_all %>%
       signal_type == "weight loss (Provider-acknowledged unexplained weight loss or other unexplained weight loss > 10 lbs in addition to respiratory symptoms)" ~ "Weight loss",
       signal_type == "recurrent bronchitis/pneumonia (an index infection, followed by 2nd pneumonia at least 1 month after index, no more than 1 year after index.)" ~ "Recurrent bronchitis/pneumonia",
       signal_type == "CT Imaging Finding" ~ "CT Imaging Finding",  # save this from sentence case
-      is.na(signal_type) ~ "Other: misc.",  # Fold the rare NA values into Other.
-      str_like(signal_other_text, "%pain%") ~ "Other: pain",
+      is.na(signal_type) ~ "Other",  # Fold the rare NA values into Other.
+      str_like(signal_other_text, "%pain%") ~ "Other",  # Pain, anemia, wt loss, habits now all merged into Other.
       str_like(signal_other_text, "%ida%") ~ "Iron deficiency anemia",  # merge
-      str_like(signal_other_text, "%dec hb%") ~ "Other: anemia, unspecified",
-      str_like(signal_other_text, "%anemia%") ~ "Other: anemia, unspecified",
+      str_like(signal_other_text, "%dec hb%") ~ "Other",
+      str_like(signal_other_text, "%anemia%") ~ "Other",
       str_like(signal_other_text, "%blood%") ~ "Blood in stool",  # merge
-      str_like(signal_other_text, "%discomf%") ~ "Other: pain",
-      str_like(signal_other_text, "%loss%") ~ "Other: weight loss",
-      str_like(signal_other_text, "%diarrh%") ~ "Other: bowel habits",
+      str_like(signal_other_text, "%discomf%") ~ "Other",
+      str_like(signal_other_text, "%loss%") ~ "Other",
+      str_like(signal_other_text, "%diarrh%") ~ "Other",
       str_like(signal_other_text, "%cologuard%") ~ "Fecal occult blood test finding",  # merge
-      str_like(signal_other_text, "%habit%") ~ "Other: bowel habits",
-      str_like(signal_other_text, "%constip%") ~ "Other: bowel habits",
-      str_like(signal_other_text, "%leakage%") ~ "Other: bowel habits",
+      str_like(signal_other_text, "%habit%") ~ "Other",
+      str_like(signal_other_text, "%constip%") ~ "Other",
+      str_like(signal_other_text, "%leakage%") ~ "Other",
       str_like(signal_other_text, "%polyp%") ~ "Colonoscopy finding",  # merge
-      signal_type == "Other" ~ "Other: misc.",
       .default = str_to_sentence(signal_type)
     )
   ) %>% 
@@ -980,9 +979,13 @@ reviewed_all %>%
   )) %>% 
   arrange(desc(cancer_type), desc(tot), desc(VA), signal_type) %>% 
   select(cancer_type, signal_type, VA, Geisinger) %>% 
-  rename(`Cancer type` = cancer_type, `Cancer signal` = signal_type) %>% 
+  rename(`Cancer type` = cancer_type, `Cancer signal` = signal_type)
+
+distribution_of_symptoms %>% 
   kable()
 ```
+
+## Side analysis: free text list
 
 Someone will clearly want to know what the Geisinger "Other" signals represent.
 
