@@ -815,6 +815,12 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 
 **Current value** of `DO_PCP_FILTERING` is: `r DO_PCP_FILTERING`.
 
+After copy/paste:
+
+- [ ] Insert blank row reading "Race"
+- [ ] Indent the race factor value rows
+- [ ] put the $n$ in parentheses in the header row
+
 \newpage
 
 
@@ -935,7 +941,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
 
 
 
-# TABLE 4? Distribution of symptoms
+# TABLE 4: Distribution of symptoms
 
 ```{r distribution-sx}
 reviewed_all %>% 
