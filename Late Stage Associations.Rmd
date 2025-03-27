@@ -147,10 +147,11 @@ ex_colon <- exclusions %>% filter(cancer_type=="Colon") %>% pull(n)
 ex_lung  <- exclusions %>% filter(cancer_type=="Lung")  %>% pull(n)
 ```
 
-## For text: INCLUDE
+## For text (1): INCLUDE
 
-**For text:** On the basis of PCP visits in VA, we excluded `r ex_lung` patients
-from the lung cancer analysis, and `r ex_colon` patients from the colorectal analysis.
+"On the basis of PCP visits in VA, we excluded `r ex_lung` patients
+from the lung cancer analysis, and `r ex_colon` patients from the colorectal analysis."
+
 
 Interpretation of this last table: The combination of no PCP after cutoff
 **and** no PCP before cutoff (the pair (0,0)) doesn't exist. Only (0,1), (1,0),
@@ -815,11 +816,13 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 
 **Current value** of `DO_PCP_FILTERING` is: `r DO_PCP_FILTERING`.
 
-After copy/paste:
+## To do after copy/paste
 
 - [ ] Insert blank row reading "Race"
 - [ ] Indent the race factor value rows
 - [ ] put the $n$ in parentheses in the header row
+- [ ] lose the denom in last row
+- [ ] make "colon" say "colorectal"
 
 \newpage
 
@@ -841,9 +844,12 @@ t1t2 %>%
   kable()
 ```
 
-Remember, after knit:
+## To do after copy/paste
 
 - [ ] Indent the appropriate rows.
+- [ ] Times 10 point
+- [ ] Bold
+- [ ] resize columns, working right to left
 
 
 
@@ -941,7 +947,7 @@ ggplot(aes(y=init_to_completion_yrs, x = Population, fill=site)) +
 
 
 
-# TABLE 4: Distribution of symptoms
+# TABLE 3: Distribution of symptoms
 
 ```{r distribution-sx}
 distribution_of_symptoms <- reviewed_all %>% 
@@ -984,6 +990,13 @@ distribution_of_symptoms <- reviewed_all %>%
 distribution_of_symptoms %>% 
   kable()
 ```
+
+## To do after copy/paste
+
+- [ ] put a line under colon
+- [ ] change to colorectal
+- [ ] write out abbrs
+
 
 ## Side analysis: free text list
 
@@ -1081,7 +1094,7 @@ temp_mod_sv %>%
 ```
 
 
-## For text: About off-scale points (INCLUDE)
+## For text (2): About off-scale points. INCLUDE
 
 ```{r some-off-scale-counts, message=FALSE}
 temp_mod_sv %>% 
@@ -1116,6 +1129,8 @@ cuts %>%
 In panel one, `r cuts[1,2]` of `r cuts[1,4]` points are off scale, with a maximum of `r cuts[1,3]`.
 In panel two, `r cuts[2,2]` of `r cuts[2,4]` points are off scale, with a maximum of `r cuts[2,3]`.
 In panel three, `r cuts[3,2]` of `r cuts[3,4]` points are off scale, with a maximum of `r cuts[3,3]`.
+
+## Side analysis: $n$ points
 
 In case someone asks, "Why 200-something points per panel?":
 
@@ -1235,7 +1250,7 @@ lung_diff <- sens_table %>%
   pull(pct_ca)
 ```
 
-## For text (INCLUDE)
+## For text (3): INCLUDE
 
 In sensitivity analysis, `r init_diff` percent of all missed opportunities would be excluded if the time to initiate workup was changed from `r ITIMES[1]` to `r ITIMES[2]` days.
 If time to complete colorectal cancer workup was changed from `r CTIMES[1]` to `r CTIMES[2]` days, `r col_diff` percent of colorectal missed opportunities would be excluded.
@@ -1244,7 +1259,7 @@ If time to complete lung cancer workup was changed from `r LTIMES[1]` to `r LTIM
 
 
 
-# TABLE 3? Race and sex $\sim$ advanced
+# TABLE 4: Race and sex $\sim$ advanced
 
 ```{r construct-pvals}
 colon <- all_data %>% filter(cancer_type == "Colon")
@@ -1282,8 +1297,8 @@ rm(chi_colon_race, chi_colon_sex, chi_lung_race, chi_lung_sex)
 rm(tab_colon_race, tab_colon_sex, tab_lung_race, tab_lung_sex)
 ```
 
-The following table might be useful if it helps explain what's going on and why I
-mentioned only 2 levels of race as a factor in the text.
+The following table explains what's going on in detail with statistical
+hypothesis tests of race and sex (as opposed to the short version in text).
 
 All $P$ values are by $\chi^2$.
 
@@ -1326,6 +1341,16 @@ assoc %>%
   # neat trick to add close paren
   kable()
 ```
+
+## To do after copy/paste
+
+- [ ] insert leader rows reading 'race' and 'sex'
+- [ ] indent factor levels
+- [ ] delete column 1
+- [ ] put $P$ values in leader rows only
+
+
+
 
 # Screening
 
