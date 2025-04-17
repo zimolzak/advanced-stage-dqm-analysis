@@ -149,8 +149,9 @@ ex_lung  <- exclusions %>% filter(cancer_type=="Lung")  %>% pull(n)
 
 ## For text (1): INCLUDE
 
-"On the basis of PCP visits in VA, we excluded `r ex_lung` patients
-from the lung cancer analysis, and `r ex_colon` patients from the colorectal analysis."
+"We excluded `r ex_lung` lung cancer patients
+and `r ex_colon` colorectal cancer patients from the cohort due to a lack of
+primary care visits in the VA."
 
 
 Interpretation of this last table: The combination of no PCP after cutoff
@@ -833,6 +834,7 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 - [ ] Indent the race factor value rows
 - [ ] put the $n$ in parentheses in the header row
 - [ ] lose the denom in last row
+- [ ] Put asterisks in the sex and race cells for Geisinger.
 
 \newpage
 
