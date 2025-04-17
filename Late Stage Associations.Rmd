@@ -529,6 +529,10 @@ reviewed_all_grp <- reviewed_all %>%
       MOD_delay_completing == "Unsure" ~ "No",
       .default = MOD_delay_completing
     ),
+    MOD_definite = case_when(
+      MOD_delay_requesting == "Yes" ~ TRUE,  # fix glitch in review data, only 1 row.
+      .default = MOD_definite
+    )
   ) %>% 
   replace_na(list(MOD_delay_requesting = "No", MOD_delay_completing = "No"))
 
@@ -539,6 +543,8 @@ chart_rev_confint <- bind_rows(
   # site, cancer_type, Fact, Val, n, d
   # VA,   Colon,       Sex,  F,   55, 100.
   
+  # Table 1
+  
   reviewed_all_grp %>% 
     count(Sex) %>% 
     filter(!is.na(Sex)) %>%
@@ -548,25 +554,24 @@ chart_rev_confint <- bind_rows(
     # Note: no filter(!is.na())
     mutate(Fact = "Race", Val=as.character(Race)),
 
+  # Table 2
+  
   reviewed_all_grp %>% 
     count(signal_present) %>% 
     filter(!is.na(signal_present)) %>%
     mutate(Fact = "Ca signal", Val=as.character(signal_present)),
   reviewed_all_grp %>% 
-    filter(signal_present == "Yes") %>% 
+    filter(!is.na(signal_present)) %>% 
     count(MOD_delay_pattern) %>%
-    mutate(Fact = "    +S Pattern", Val=as.character(MOD_delay_pattern)),
+    mutate(Fact = "Pattern", Val=as.character(MOD_delay_pattern)),
   reviewed_all_grp %>% 
-    filter(signal_present == "No") %>% 
-    count(MOD_delay_pattern) %>%
-    mutate(Fact = "    -S Pattern", Val=as.character(MOD_delay_pattern)),
-  
-  reviewed_all_grp %>% 
+    filter(!is.na(MOD_definite), !is.na(signal_present)) %>%
     count(MOD_definite) %>% 
-    filter(!is.na(MOD_definite)) %>%
     mutate(Fact = "MOD", Val=as.character(MOD_definite)),
   va_population_ci
 ) %>%  # End of very big bind_rows().
+  
+  # Calculate % and CI
   
   group_by(site, cancer_type, Fact) %>% 
   select(site, cancer_type, Fact, Val, n, d) %>% 
@@ -578,21 +583,16 @@ chart_rev_confint <- bind_rows(
     wilson.low = binconf(n, d)[,"Lower"],
     wilson.upp = binconf(n, d)[,"Upper"]
   ) %>% 
+  
+  # Formatting
+  
   filter(
-    # Exclude 1 rows because it is redundant to say 25% true, 75% false.
+    # Exclude 1 row because it is redundant to say 25% true, 75% false.
     !(Fact == "MOD" & Val == FALSE)
   ) %>%
   unite(col=Characteristic, Fact, Val, sep=" ") %>%
-  # mutate(Characteristic = case_when(  # Rename some cell contents for better readability.
-  #   Characteristic == "Ca considered No" ~ "Cancer not considered",
-  #   Characteristic == "Ca signal Yes" ~ "Cancer signal present",
-  #   Characteristic == "Ever declined screening Yes" ~ 'Declined screening',
-  #   Characteristic == "MOD TRUE" ~ 'MOD present',
-  #   Characteristic == "Sex M" ~ 'Male',
-  #   Characteristic == "Cancer signal present, given MOD No" ~ 'Missed screening, given MOD',
-  #   .default = Characteristic
-  # )) %>% 
   arrange(desc(site), desc(cancer_type))
+
 
 # Print the detailed CI table now.
 chart_rev_confint %>%
@@ -605,6 +605,13 @@ chart_rev_confint %>%
 ```
 
 ```{r DF-review-ci-concise}
+denoms_temporary <- chart_rev_confint %>% 
+  filter(Characteristic == "Ca signal Yes") %>% 
+  select(site, cancer_type, d) %>% 
+  mutate(d = as.character(d)) %>% 
+  pivot_wider(names_from = c(site, cancer_type), values_from = d, names_sep = " ") %>% 
+  mutate(Characteristic_short = "denominator")
+
 # Prepare concise CI table for later. We do bind_rows() on it later: "TABLE 1"
 review_ci_concise <- chart_rev_confint %>%
   select(site, cancer_type, Characteristic, P_CI_short) %>% 
@@ -662,7 +669,7 @@ That is also most consistent across VA vs.\ Geisinger data.
 theme_set(theme_bw())
 
 chart_rev_confint %>% 
-  filter(!grepl("Race", Characteristic), !grepl("+S", Characteristic, fixed = TRUE), !grepl("-S", Characteristic)) %>%   # FIXME - can bring back later
+  filter(!grepl("Race", Characteristic), !grepl("No", Characteristic), !grepl("Sex F", Characteristic)) %>%   # FIXME - can bring back later
   rename(Site = site) %>% 
   ggplot(aes(x = Characteristic, y = wilson.poi, colour = Site, group = Site)) +
   facet_grid(cols=vars(cancer_type)) +
@@ -679,7 +686,8 @@ chart_rev_confint %>%
     legend.title =  element_text(size=10),
     legend.position = "inside",
     legend.background  = element_rect(color="grey", linewidth = 0.4),
-    legend.position.inside = c(0.1, 0.92)
+    legend.position.inside = c(0.3, 0.75),
+    axis.text.x = element_text(angle = 90)
   )
 ```
 
@@ -729,17 +737,18 @@ t1t2_ordering <- tribble(
   "Other","Other",
   "Advanced stage","Advanced stage",
   
-  "Ca signal Yes","Cancer signal present",
-  "    +S Pattern Requesting", "    Delay initiating workup",
-  "    +S Pattern Completing", "    Delay completing workup",
-  "    +S Pattern Combined", "    Delay, combined",
+  "denominator", "denominator",
+  "Ca signal Yes","Cancer signal present *",
+  "Pattern Requesting", "    Delay initiating workup **",
+  "Pattern Completing", "    Delay completing workup **",
+  "Pattern Combined", "    Delay, combined **",
   # "    +S Pattern Unspecified delay", "    Delay, unspecified",  # should not exist any more
-  "    +S Pattern Timely", "    No delays",
+  "Pattern Timely", "    Workup initiated and completed with no delay",
   
-  "Ca signal No","Cancer signal absent",
-  "    -S Pattern Missed screening", "    Screening due but not performed",
-  "    -S Pattern Screen-compliant", "    Up-to-date on screening per guidelines",
-  "    -S Pattern Declined screening", "    Screening declined",
+  "Ca signal No","Cancer signal absent *",
+  "Pattern Missed screening", "    Screening due but not performed **",
+  "Pattern Screen-compliant", "    Up-to-date on screening per guidelines",
+  "Pattern Declined screening", "    Screening declined",
   
   "MOD TRUE","MOD present",
   "signal_to_init", "Cancer signal to workup initiation, d",
@@ -774,6 +783,7 @@ t1t2 <- reviewed_all %>%
   # Bring in stats on DISCRETE variables.
   # IMPORTANT - this is where review_ci_concise comes in.
   bind_rows(review_ci_concise %>% rename(Characteristic_short = Characteristic)) %>% 
+  bind_rows(denoms_temporary) %>% 
   right_join(t1t2_ordering) %>%  # Note: this has similar effect to filter. If row not mentioned, not included.
   arrange(order) %>% 
   select(order, Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`)
@@ -805,6 +815,7 @@ table_1_for_later %>%   # mainly VA stuff
   ) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
   replace_na(list(`Geisinger Lung` = "0%")) %>% 
+  rename(`VA Colorectal` = `VA Colon`, `Geisinger Colorectal` = `Geisinger Colon`) %>% 
   kable()
 ```
 
@@ -822,7 +833,6 @@ respectively) to equal 37949 and 14753. With an advanced stage rate (last row) o
 - [ ] Indent the race factor value rows
 - [ ] put the $n$ in parentheses in the header row
 - [ ] lose the denom in last row
-- [ ] make "colon" say "colorectal"
 
 \newpage
 
@@ -841,6 +851,7 @@ t1t2 %>%
   filter(order >= 9 ) %>% 
   select(Characteristic, `VA Lung`, `VA Colon`, `Geisinger Lung`, `Geisinger Colon`) %>% 
   replace_na(list(`VA Lung` = "0", `VA Colon` = "0", `Geisinger Lung` = "0" )) %>% 
+  rename(`VA Colorectal` = `VA Colon`, `Geisinger Colorectal` = `Geisinger Colon`) %>% 
   kable()
 ```
 
@@ -850,6 +861,7 @@ t1t2 %>%
 - [ ] Times 10 point
 - [ ] Bold
 - [ ] resize columns, working right to left
+- [ ] lose "denominator"
 
 
 
