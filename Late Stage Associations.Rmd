@@ -1072,7 +1072,7 @@ temp_mod_sv <- reviewed_all %>%
     value >= 0
   ) 
 
-Y_MAX <- 6  # 8 almost okay but boring
+Y_MAX <- 8  # 8 almost okay but boring. 6 slightly better.
 
 fig1 <- temp_mod_sv %>% 
   mutate(Population = Population_n) %>% 
