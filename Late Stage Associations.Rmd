@@ -478,6 +478,16 @@ all_data %>%
   facet_grid(rows=vars(cancer_type))
 ```
 
+## *Static* Text for mini abstract: INCLUDE
+
+proportion of advanced-stage lung cancer was 45.9% at the VA and
+58.3% at Geisinger Health System, with frequent missed opportunities (58.0% and 77.8%,
+respectively). The proportion of advanced-stage colorectal
+cancer was 33.2% at the VA medical center and 36.2% at Geisinger Health System, and
+most patients had missed opportunities (66.3% and 69.7%, respectively)
+
+
+
 ## For R1 comment (missingness)
 
 > How did the authors deal with unknown/incomplete stage cases in cohort construction and calculation of the % advanced stage?
